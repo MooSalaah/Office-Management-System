@@ -2,10 +2,15 @@ import { MongoClient, Db } from 'mongodb'
 import { DB_CONFIG } from './config'
 
 if (!DB_CONFIG.uri) {
-  throw new Error('Please add your Mongo URI to .env.local')
+  // Only throw error in production or when actually trying to connect
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Please add your Mongo URI to .env.local')
+  }
+  // In development/build time, just return a mock
+  console.warn('MongoDB URI not found, using mock connection for build')
 }
 
-const uri = DB_CONFIG.uri
+const uri = DB_CONFIG.uri || 'mongodb://localhost:27017/mock'
 const options = {}
 
 let client: MongoClient

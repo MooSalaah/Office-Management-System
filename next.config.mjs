@@ -5,6 +5,9 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
+  // Output configuration
+  output: 'standalone',
+  
   // Image optimization
   images: {
     domains: ['localhost'],

@@ -1,10 +1,12 @@
-# إعداد نظام إدارة المكتب الهندسي
+# دليل الإعداد السريع
 
 ## المتطلبات الأساسية
 
 - Node.js 18+ 
-- MongoDB 5.0+
+- MongoDB Atlas (للإنتاج)
 - npm أو yarn
+- حساب Render.com
+- حساب Netlify.com
 
 ## التثبيت والإعداد
 
@@ -16,29 +18,61 @@ npm install
 
 ### 2. إعداد قاعدة البيانات
 
-1. تأكد من تشغيل MongoDB على جهازك
-2. أنشئ ملف `.env.local` في مجلد المشروع وأضف المتغيرات التالية:
-
+#### للتطوير المحلي:
 ```env
 # MongoDB Configuration
 MONGODB_URI=mongodb://localhost:27017/office_management
 MONGODB_DB=office_management
 
-# JWT Secret (for authentication)
+# JWT Secret
 JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
 
-# Next.js Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret-key-here-change-in-production
+# API URL
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+#### للإنتاج:
+```env
+# MongoDB Atlas
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+
+# JWT Secret
+JWT_SECRET=your-super-secure-jwt-secret-key-here
+
+# CORS Origin
+CORS_ORIGIN=https://your-frontend-domain.com
+
+# API URL
+NEXT_PUBLIC_API_URL=https://your-backend-domain.onrender.com
 ```
 
 ### 3. تشغيل المشروع
 
 ```bash
+# وضع التطوير
 npm run dev
+
+# بناء الإنتاج
+npm run build
+npm start
 ```
 
 المشروع سيعمل على `http://localhost:3000`
+
+### 4. حل مشاكل البناء
+
+إذا واجهت مشاكل في البناء:
+
+```bash
+# تنظيف cache
+npm run clean
+
+# إعادة تثبيت التبعيات
+npm run reinstall
+
+# إعادة البناء
+npm run rebuild
+```
 
 ## بنية المشروع
 
@@ -74,10 +108,35 @@ npm run dev
 - تشفير كلمات المرور بـ bcrypt
 - إدارة الأدوار والصلاحيات
 
-## الخطوات التالية
+## النشر
 
-1. إضافة باقي النماذج (Tasks, Finance, Attendance)
-2. إنشاء API Routes
-3. ربط الواجهة الأمامية مع قاعدة البيانات
-4. إضافة نظام المصادقة
-5. إضافة التحقق من الصلاحيات 
+### Render (Backend)
+1. ارفع الكود إلى GitHub
+2. اذهب إلى Render.com
+3. أنشئ Web Service جديد
+4. اربط repository
+5. أضف المتغيرات البيئية
+
+### Netlify (Frontend)
+1. اذهب إلى Netlify.com
+2. أنشئ site جديد من GitHub
+3. أضف `NEXT_PUBLIC_API_URL`
+
+## استكشاف الأخطاء
+
+### مشاكل شائعة:
+- **خطأ في المكونات**: تأكد من وجود جميع ملفات UI
+- **خطأ في قاعدة البيانات**: تأكد من صحة MongoDB URI
+- **خطأ في البناء**: جرب `npm run rebuild`
+
+### سجلات الأخطاء:
+- Render: Site > Logs
+- Netlify: Site > Functions > Logs
+
+## الملفات المضافة
+
+- `render.yaml` - تكوين Render
+- `netlify.toml` - تكوين Netlify
+- `.npmrc` - تكوين npm
+- `app/api/health/route.ts` - فحص صحة النظام
+- `lib/config.ts` - تكوين النظام 

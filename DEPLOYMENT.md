@@ -1,13 +1,28 @@
 # دليل نشر المشروع
 
-## المتغيرات البيئية المطلوبة
+## 🚀 النشر السريع
 
-### Netlify (Frontend)
+### 1. Render (Backend)
+```bash
+# 1. ارفع الكود إلى GitHub
+git add .
+git commit -m "Fix build issues and add deployment configs"
+git push origin main
+
+# 2. اذهب إلى Render.com
+# 3. أنشئ Web Service جديد
+# 4. اربط repository
+# 5. أضف المتغيرات البيئية:
+```
+
+### المتغيرات البيئية المطلوبة
+
+#### Netlify (Frontend)
 ```env
 NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
 ```
 
-### Render (Backend)
+#### Render (Backend)
 ```env
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database-name?retryWrites=true&w=majority
 JWT_SECRET=your-super-secure-jwt-secret-key-here
@@ -71,8 +86,29 @@ curl https://office-management-system-v82i.onrender.com/api/projects
 2. **خطأ قاعدة البيانات**: تأكد من صحة `MONGODB_URI`
 3. **خطأ JWT**: تأكد من إعداد `JWT_SECRET`
 4. **خطأ API URL**: تأكد من إعداد `NEXT_PUBLIC_API_URL` في Netlify
+5. **خطأ البناء**: تأكد من وجود جميع الملفات المطلوبة
+
+### حل مشاكل البناء:
+```bash
+# 1. تنظيف cache
+rm -rf .next
+rm -rf node_modules
+npm cache clean --force
+
+# 2. إعادة تثبيت التبعيات
+npm install
+
+# 3. بناء المشروع
+npm run build
+```
 
 ### سجلات الأخطاء:
 - Render: Site > Logs
 - Netlify: Site > Functions > Logs
-- MongoDB: Atlas > Logs 
+- MongoDB: Atlas > Logs
+
+### ملفات التكوين المضافة:
+- `render.yaml` - تكوين Render
+- `netlify.toml` - تكوين Netlify
+- `.npmrc` - تكوين npm
+- `app/api/health/route.ts` - فحص صحة النظام 
