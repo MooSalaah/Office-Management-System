@@ -47,7 +47,7 @@ export const useSocket = (userId?: string) => {
     if (typeof window !== 'undefined') {
       // Initialize socket
       socketRef.current = io(process.env.NODE_ENV === 'production' 
-        ? 'https://your-domain.com' 
+        ? (process.env.NEXT_PUBLIC_API_URL || 'https://office-management-system-v82i.onrender.com')
         : 'http://localhost:3001'
       )
 

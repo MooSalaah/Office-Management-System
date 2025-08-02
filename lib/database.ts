@@ -1,10 +1,11 @@
 import { MongoClient, Db } from 'mongodb'
+import { DB_CONFIG } from './config'
 
-if (!process.env.MONGODB_URI) {
+if (!DB_CONFIG.uri) {
   throw new Error('Please add your Mongo URI to .env.local')
 }
 
-const uri = process.env.MONGODB_URI
+const uri = DB_CONFIG.uri
 const options = {}
 
 let client: MongoClient
@@ -34,7 +35,7 @@ export default clientPromise
 
 export async function getDatabase(): Promise<Db> {
   const client = await clientPromise
-  return client.db(process.env.MONGODB_DB || 'office_management')
+  return client.db(DB_CONFIG.name)
 }
 
 export async function closeConnection(): Promise<void> {

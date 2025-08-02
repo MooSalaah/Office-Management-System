@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { getApiUrl } from '@/lib/config'
 
 interface ApiResponse<T> {
   success: boolean
@@ -21,10 +22,11 @@ export function useApi<T>() {
   })
 
   const fetchData = useCallback(async (url: string, options?: RequestInit) => {
+    const apiUrl = getApiUrl(url)
     setState(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers
@@ -61,10 +63,11 @@ export function useApi<T>() {
   }, [])
 
   const postData = useCallback(async <D = any>(url: string, data: D) => {
+    const apiUrl = getApiUrl(url)
     setState(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -101,10 +104,11 @@ export function useApi<T>() {
   }, [])
 
   const putData = useCallback(async <D = any>(url: string, data: D) => {
+    const apiUrl = getApiUrl(url)
     setState(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -141,10 +145,11 @@ export function useApi<T>() {
   }, [])
 
   const deleteData = useCallback(async (url: string) => {
+    const apiUrl = getApiUrl(url)
     setState(prev => ({ ...prev, loading: true, error: null }))
     
     try {
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
