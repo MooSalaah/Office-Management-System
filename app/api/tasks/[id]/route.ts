@@ -65,6 +65,53 @@ export async function PUT(
       )
     }
 
+    // Emit real-time update
+    try {
+      // @ts-ignore - Next.js specific
+      const io = request.socket?.server?.io
+      if (io) {
+        io.emit('data-changed', {
+          type: 'update',
+          entity: 'task',
+          entityId: task._id,
+          data: task,
+          userId: 'system',
+          timestamp: new Date()
+        })
+
+        // Send notification if task status changed
+        if (validatedData.status) {
+          const statusText = validatedData.status === 'completed' ? 'مكتملة' : 
+                           validatedData.status === 'in-progress' ? 'قيد التنفيذ' : 
+                           validatedData.status === 'new' ? 'جديدة' : 
+                           validatedData.status === 'on-hold' ? 'معلقة' : 'ملغية'
+          
+          io.emit('new-notification', {
+            id: Math.random().toString(36).substr(2, 9),
+            type: validatedData.status === 'completed' ? 'success' : 'info',
+            title: 'تحديث حالة المهمة',
+            message: `تم تحديث حالة المهمة: ${task.title} إلى ${statusText}`,
+            timestamp: new Date(),
+            targetUserId: task.assignedTo?.[0] || 'all'
+          })
+
+          // Send notification to project manager if task was completed
+          if (validatedData.status === 'completed' && task.projectId) {
+            io.emit('new-notification', {
+              id: Math.random().toString(36).substr(2, 9),
+              type: 'success',
+              title: 'مهمة مكتملة',
+              message: `تم إكمال مهمة في المشروع: ${task.title}`,
+              timestamp: new Date(),
+              targetUserId: 'all'
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to emit real-time update:', error)
+    }
+
     return NextResponse.json({ success: true, data: task })
   } catch (error: any) {
     console.error('Error updating task:', error)

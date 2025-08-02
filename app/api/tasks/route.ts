@@ -88,6 +88,18 @@ export async function POST(request: NextRequest) {
             targetUserId: task.assignedTo
           })
         }
+
+        // Send notification to project manager if task is part of a project
+        if (task.projectId) {
+          io.emit('new-notification', {
+            id: Math.random().toString(36).substr(2, 9),
+            type: 'info',
+            title: 'مهمة جديدة في المشروع',
+            message: `تم إضافة مهمة جديدة للمشروع: ${task.title}`,
+            timestamp: new Date(),
+            targetUserId: 'all'
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to emit real-time update:', error)

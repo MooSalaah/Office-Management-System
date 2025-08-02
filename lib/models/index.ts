@@ -9,6 +9,8 @@ export * from "./client"
 
 // Project Model
 export * from "./project"
+export * from "./default-tasks"
+export * from "./project-types"
 
 // Task Model
 export * from "./task"

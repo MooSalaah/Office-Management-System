@@ -122,6 +122,17 @@ export class ProjectModel {
     return result.modifiedCount > 0
   }
 
+  async updateProgressFromTasks(projectId: string, completedTasks: number, totalTasks: number): Promise<boolean> {
+    await this.initCollection()
+    
+    if (totalTasks === 0) {
+      return this.updateProgress(projectId, 0)
+    }
+
+    const progress = Math.round((completedTasks / totalTasks) * 100)
+    return this.updateProgress(projectId, progress)
+  }
+
   async updateCost(id: string, actualCost: number): Promise<boolean> {
     await this.initCollection()
     const result = await this.collection.updateOne(

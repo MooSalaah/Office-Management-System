@@ -12,6 +12,8 @@ export * from "./client"
 
 // Project Schemas
 export * from "./project"
+export * from "./default-tasks"
+export * from "./project-types"
 
 // Task Schemas
 export * from "./task"

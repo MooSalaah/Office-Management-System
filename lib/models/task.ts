@@ -95,7 +95,30 @@ export class TaskModel {
       { returnDocument: 'after' }
     )
 
-    return result ? { ...result, _id: result._id.toString() } as Task : null
+    const updatedTask = result ? { ...result, _id: result._id.toString() } as Task : null
+
+    // If task status changed to completed, update project progress
+    if (updatedTask && updateData.status === 'completed' && updatedTask.projectId) {
+      await this.updateProjectProgress(updatedTask.projectId)
+    }
+
+    return updatedTask
+  }
+
+  private async updateProjectProgress(projectId: string): Promise<void> {
+    try {
+      const { projectModel } = await import('./project')
+      
+      // Get all tasks for this project
+      const projectTasks = await this.findByProject(projectId)
+      const totalTasks = projectTasks.length
+      const completedTasks = projectTasks.filter(task => task.status === 'completed').length
+      
+      // Update project progress
+      await projectModel.updateProgressFromTasks(projectId, completedTasks, totalTasks)
+    } catch (error) {
+      console.error('Failed to update project progress:', error)
+    }
   }
 
   async delete(id: string): Promise<boolean> {

@@ -32,6 +32,7 @@ interface Project {
   clientId: string
   clientName: string
   type: string
+  priority?: "low" | "medium" | "high"
   status: "in-progress" | "completed" | "new" | "cancelled"
   assignedEngineers: string[]
   assignedEngineerNames: string[]
@@ -80,8 +81,10 @@ export default function ProjectsPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false)
+  const [isAddProjectTypeDialogOpen, setIsAddProjectTypeDialogOpen] = useState(false)
+  const [isAddDefaultTaskDialogOpen, setIsAddDefaultTaskDialogOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
-  const [filterStatus, setFilterStatus] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("in-progress")
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
 
@@ -90,6 +93,7 @@ export default function ProjectsPage() {
     clientName: "",
     clientId: "",
     type: "سكني",
+    priority: "medium" as "low" | "medium" | "high",
     assignedEngineers: [] as string[],
     price: 0,
     downPayment: 0,
@@ -104,6 +108,7 @@ export default function ProjectsPage() {
     clientName: "",
     clientId: "",
     type: "سكني",
+    priority: "medium" as "low" | "medium" | "high",
     assignedEngineers: [] as string[],
     price: 0,
     downPayment: 0,
@@ -120,10 +125,26 @@ export default function ProjectsPage() {
     contactPerson: "",
   })
 
+  const [newProjectType, setNewProjectType] = useState({
+    name: "",
+    description: "",
+  })
+
+  const [newDefaultTask, setNewDefaultTask] = useState({
+    title: "",
+    description: "",
+    category: "other" as const,
+  })
+
   const [taskAssignments, setTaskAssignments] = useState<{ [key: string]: string }>({})
+  const [defaultTasks, setDefaultTasks] = useState<{ id: string; title: string; description?: string; category: string; isActive: boolean }[]>([])
+  const [projectTypes, setProjectTypes] = useState<{ id: string; name: string; description?: string; isActive: boolean }[]>([])
+  const [projectTasks, setProjectTasks] = useState<{ id: string; title: string; description?: string; status: string; assigneeName?: string; dueDate?: string }[]>([])
 
   useEffect(() => {
     fetchEngineers()
+    fetchDefaultTasks()
+    fetchProjectTypes()
     // Simulate loading delay
     const timer = setTimeout(() => {
       setIsLoading(false)
@@ -133,17 +154,88 @@ export default function ProjectsPage() {
   }, [])
 
   const fetchEngineers = async () => {
-    // Simulate API call - get all users who can be assigned to projects
+    // Simulate API call - get only engineers and managers
     setEngineers([
-      { id: "1", name: "محمد قطب" },
-      { id: "2", name: "مصطفى صلاح" },
-      { id: "3", name: "عمرو رمضان" },
-      { id: "4", name: "محمد مجدي" },
-      { id: "5", name: "كرم عبد الرحمن" },
-      { id: "6", name: "علي أحمد" },
-      { id: "7", name: "مروان جمال" },
-      { id: "8", name: "وليد عزام" },
-    ])
+      { id: "1", name: "محمد قطب", role: "engineer" },
+      { id: "2", name: "مصطفى صلاح", role: "engineer" },
+      { id: "3", name: "عمرو رمضان", role: "engineer" },
+      { id: "4", name: "محمد مجدي", role: "manager" },
+      { id: "5", name: "كرم عبد الرحمن", role: "engineer" },
+      { id: "6", name: "علي أحمد", role: "engineer" },
+      { id: "7", name: "مروان جمال", role: "manager" },
+      { id: "8", name: "وليد عزام", role: "engineer" },
+    ].filter(user => user.role === "engineer" || user.role === "manager"))
+  }
+
+  const fetchDefaultTasks = async () => {
+    try {
+      const response = await fetch('/api/default-tasks?active=true')
+      if (response.ok) {
+        const result = await response.json()
+        setDefaultTasks(result.data)
+      } else {
+        // Fallback to mock data if API fails
+        setDefaultTasks([
+          { id: "1", title: "تصميم معماري", description: "تصميم المخططات المعمارية", category: "architectural", isActive: true },
+          { id: "2", title: "تصميم إنشائي", description: "تصميم المخططات الإنشائية", category: "structural", isActive: true },
+          { id: "3", title: "تصميم كهربائي", description: "تصميم المخططات الكهربائية", category: "electrical", isActive: true },
+          { id: "4", title: "تصميم ميكانيكي", description: "تصميم المخططات الميكانيكية", category: "mechanical", isActive: true },
+          { id: "5", title: "تصميم سباكة", description: "تصميم مخططات السباكة", category: "plumbing", isActive: true },
+        ])
+      }
+    } catch (error) {
+      console.error('Failed to fetch default tasks:', error)
+      // Fallback to mock data
+      setDefaultTasks([
+        { id: "1", title: "تصميم معماري", description: "تصميم المخططات المعمارية", category: "architectural", isActive: true },
+        { id: "2", title: "تصميم إنشائي", description: "تصميم المخططات الإنشائية", category: "structural", isActive: true },
+        { id: "3", title: "تصميم كهربائي", description: "تصميم المخططات الكهربائية", category: "electrical", isActive: true },
+        { id: "4", title: "تصميم ميكانيكي", description: "تصميم المخططات الميكانيكية", category: "mechanical", isActive: true },
+        { id: "5", title: "تصميم سباكة", description: "تصميم مخططات السباكة", category: "plumbing", isActive: true },
+      ])
+    }
+  }
+
+  const fetchProjectTypes = async () => {
+    try {
+      const response = await fetch('/api/project-types?active=true')
+      if (response.ok) {
+        const result = await response.json()
+        setProjectTypes(result.data)
+      } else {
+        // Fallback to mock data if API fails
+        setProjectTypes([
+          { id: "1", name: "سكني", description: "مشاريع سكنية", isActive: true },
+          { id: "2", name: "تجاري", description: "مشاريع تجارية", isActive: true },
+          { id: "3", name: "صناعي", description: "مشاريع صناعية", isActive: true },
+          { id: "4", name: "إداري", description: "مشاريع إدارية", isActive: true },
+        ])
+      }
+    } catch (error) {
+      console.error('Failed to fetch project types:', error)
+      // Fallback to mock data
+      setProjectTypes([
+        { id: "1", name: "سكني", description: "مشاريع سكنية", isActive: true },
+        { id: "2", name: "تجاري", description: "مشاريع تجارية", isActive: true },
+        { id: "3", name: "صناعي", description: "مشاريع صناعية", isActive: true },
+        { id: "4", name: "إداري", description: "مشاريع إدارية", isActive: true },
+      ])
+    }
+  }
+
+  const fetchProjectTasks = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/tasks?projectId=${projectId}`)
+      if (response.ok) {
+        const result = await response.json()
+        setProjectTasks(result.data)
+      } else {
+        setProjectTasks([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch project tasks:', error)
+      setProjectTasks([])
+    }
   }
 
   const handleCreateProject = async () => {
@@ -160,11 +252,39 @@ export default function ProjectsPage() {
       const selectedClient = clients.find((c) => c.name === newProject.clientName)
       const clientId = selectedClient?.id || newProject.clientId
 
+      const projectData = {
+        title: newProject.name,
+        clientId: clientId,
+        type: newProject.type as any,
+        priority: newProject.priority,
+        status: "in-progress" as const,
+        assignedTo: newProject.assignedEngineers,
+        budget: newProject.price,
+        description: newProject.description,
+        startDate: new Date(newProject.startDate),
+      }
+
+      // Call API to create project
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create project')
+      }
+
+      const result = await response.json()
       const project = {
+        id: result.data._id,
         name: newProject.name,
         clientId: clientId,
         clientName: newProject.clientName,
         type: newProject.type,
+        priority: newProject.priority,
         status: "in-progress" as const,
         assignedEngineers: newProject.assignedEngineers,
         assignedEngineerNames: newProject.assignedEngineers.map((id) => engineers.find((e) => e.id === id)?.name || ""),
@@ -180,30 +300,72 @@ export default function ProjectsPage() {
 
       addProject(project)
 
+      // Send notification to all users about new project
+      toast({
+        title: "تم إنشاء المشروع بنجاح",
+        description: `تم إنشاء مشروع جديد: ${newProject.name}`,
+      })
+
       // Create default tasks for the project
-      for (const task of newProject.selectedTasks) {
-        const assigneeId = taskAssignments[task]
+      for (const taskTitle of newProject.selectedTasks) {
+        const assigneeId = taskAssignments[taskTitle]
         if (assigneeId) {
           const assignee = engineers.find((e) => e.id === assigneeId)
-          addTask({
-            title: task,
-            description: `مهمة من المشروع: ${newProject.name}`,
-            projectId: Date.now().toString(), // This would be the actual project ID
-            projectName: newProject.name,
-            assigneeId: assigneeId,
-            assigneeName: assignee?.name || "",
+          const defaultTask = defaultTasks.find(t => t.title === taskTitle)
+          const taskData = {
+            title: taskTitle,
+            description: defaultTask?.description || `مهمة من المشروع: ${newProject.name}`,
+            projectId: result.data._id,
+            assignedTo: [assigneeId],
             priority: "medium" as const,
-            status: "todo" as const,
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            dueDateHijri: getHijriDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-            createdBy: user?.id || "",
-            createdAt: new Date().toISOString(),
+            status: "pending" as const,
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          }
+          
+          // Call API to create task
+          const taskResponse = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData),
           })
+
+          if (taskResponse.ok) {
+            const taskResult = await taskResponse.json()
+            addTask({
+              title: taskTitle,
+              description: defaultTask?.description || `مهمة من المشروع: ${newProject.name}`,
+              projectId: result.data._id,
+              projectName: newProject.name,
+              assigneeId: assigneeId,
+              assigneeName: assignee?.name || "",
+              priority: "medium" as const,
+              status: "todo" as const,
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              dueDateHijri: getHijriDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+              createdBy: user?.id || "",
+              createdAt: new Date().toISOString(),
+            })
+
+            // Send notification to assigned user
+            toast({
+              title: "تم تعيين مهمة جديدة",
+              description: `تم تعيين مهمة "${taskTitle}" للمهندس ${assignee?.name} من قبل ${user?.name || 'المستخدم'}`,
+            })
+          }
         }
       }
 
       setIsCreateDialogOpen(false)
       resetNewProject()
+
+      // Fetch project tasks after creation
+      if (result.data._id) {
+        setTimeout(() => {
+          fetchProjectTasks(result.data._id)
+        }, 1000) // Wait for tasks to be created
+      }
 
       toast({
         title: "تم إنشاء المشروع بنجاح",
@@ -233,10 +395,36 @@ export default function ProjectsPage() {
       const clientId = selectedClient?.id || editProject.clientId
 
       const updatedProject = {
+        title: editProject.name,
+        clientId: clientId,
+        type: editProject.type as any,
+        priority: editProject.priority,
+        assignedTo: editProject.assignedEngineers,
+        budget: editProject.price,
+        description: editProject.description,
+        startDate: new Date(editProject.startDate),
+      }
+
+      // Call API to update project
+      const response = await fetch(`/api/projects/${editProject.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProject),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update project')
+      }
+
+      // Update local state
+      updateProject(editProject.id, {
         name: editProject.name,
         clientId: clientId,
         clientName: editProject.clientName,
         type: editProject.type,
+        priority: editProject.priority,
         assignedEngineers: editProject.assignedEngineers,
         assignedEngineerNames: editProject.assignedEngineers.map(
           (id) => engineers.find((e) => e.id === id)?.name || "",
@@ -248,11 +436,21 @@ export default function ProjectsPage() {
         remainingBalance: editProject.price - editProject.downPayment,
         description: editProject.description,
         defaultTasks: editProject.selectedTasks,
-      }
-
-      updateProject(editProject.id, updatedProject)
+      })
 
       setIsEditDialogOpen(false)
+
+      // Fetch project tasks after update
+      fetchProjectTasks(editProject.id)
+
+      // Send notification to assigned engineers about project update
+      editProject.assignedEngineers.forEach(engineerId => {
+        const engineer = engineers.find(e => e.id === engineerId)
+        toast({
+          title: "تم تحديث المشروع",
+          description: `تم تحديث مشروع: ${editProject.name} - المهندس: ${engineer?.name}`,
+        })
+      })
 
       toast({
         title: "تم تحديث المشروع بنجاح",
@@ -294,7 +492,31 @@ export default function ProjectsPage() {
         return
       }
 
+      const clientData = {
+        name: newClient.name,
+        phone: newClient.phone,
+        email: newClient.email,
+        address: newClient.address,
+        contactPerson: newClient.contactPerson || newClient.name,
+        status: "active" as const,
+      }
+
+      // Call API to create client
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create client')
+      }
+
+      const result = await response.json()
       const client = {
+        id: result.data._id,
         name: newClient.name,
         phone: newClient.phone,
         email: newClient.email,
@@ -330,12 +552,132 @@ export default function ProjectsPage() {
     }
   }
 
+  const handleAddProjectType = async () => {
+    try {
+      if (!newProjectType.name) {
+        toast({
+          title: "خطأ في البيانات",
+          description: "يرجى إدخال اسم نوع المشروع",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const typeData = {
+        name: newProjectType.name,
+        description: newProjectType.description,
+        isActive: true,
+      }
+
+      // Call API to create project type
+      const response = await fetch('/api/project-types', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(typeData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create project type')
+      }
+
+      const result = await response.json()
+      
+      // Add the new project type to the list
+      setNewProject({ ...newProject, type: newProjectType.name })
+      setIsAddProjectTypeDialogOpen(false)
+      setNewProjectType({
+        name: "",
+        description: "",
+      })
+
+      toast({
+        title: "تم إضافة نوع المشروع بنجاح",
+        description: "تم إضافة نوع المشروع الجديد وتحديده في المشروع",
+      })
+    } catch (error) {
+      toast({
+        title: "خطأ في إضافة نوع المشروع",
+        description: "حدث خطأ أثناء إضافة نوع المشروع",
+        variant: "destructive",
+      })
+    }
+  }
+
+    const handleAddDefaultTask = async () => {
+    try {
+      if (!newDefaultTask.title) {
+        toast({
+          title: "خطأ في البيانات",
+          description: "يرجى إدخال عنوان المهمة",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const taskData = {
+        title: newDefaultTask.title,
+        description: newDefaultTask.description,
+        category: newDefaultTask.category,
+        isActive: true,
+      }
+
+      // Call API to create default task
+      const response = await fetch('/api/default-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create default task')
+      }
+
+      const result = await response.json()
+      
+      // Add the new task to the default tasks list
+      setDefaultTasks(prev => [...prev, {
+        id: result.data._id,
+        title: newDefaultTask.title,
+        description: newDefaultTask.description,
+        category: newDefaultTask.category,
+        isActive: true,
+      }])
+
+      setNewProject({ 
+        ...newProject, 
+        selectedTasks: [...newProject.selectedTasks, newDefaultTask.title]
+      })
+      setIsAddDefaultTaskDialogOpen(false)
+      setNewDefaultTask({
+        title: "",
+        description: "",
+        category: "other",
+      })
+
+      toast({
+        title: "تم إضافة المهمة الافتراضية بنجاح",
+        description: "تم إضافة المهمة الافتراضية الجديدة وتحديدها في المشروع",
+      })
+    } catch (error) {
+      toast({
+        title: "خطأ في إضافة المهمة الافتراضية",
+        description: "حدث خطأ أثناء إضافة المهمة الافتراضية",
+        variant: "destructive",
+      })
+    }
+  }
+
   const resetNewProject = () => {
     setNewProject({
       name: "",
       clientName: "",
       clientId: "",
       type: "سكني",
+      priority: "medium" as "low" | "medium" | "high",
       assignedEngineers: [],
       price: 0,
       downPayment: 0,
@@ -398,7 +740,7 @@ export default function ProjectsPage() {
                       onValueChange={(value) => setNewProject({ ...newProject, clientName: value })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="اختر العميل أو أدخل اسم جديد" />
+                        <SelectValue placeholder="اختر العميل" />
                       </SelectTrigger>
                       <SelectContent>
                         {clients.map((client) => (
@@ -408,12 +750,6 @@ export default function ProjectsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input
-                      value={newProject.clientName}
-                      onChange={(e) => setNewProject({ ...newProject, clientName: e.target.value })}
-                      placeholder="أو أدخل اسم العميل"
-                      className="text-right flex-1"
-                    />
                     <Button type="button" variant="outline" size="icon" onClick={() => setIsAddClientDialogOpen(true)}>
                       <UserPlus className="h-4 w-4" />
                     </Button>
@@ -424,18 +760,40 @@ export default function ProjectsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="projectType">نوع المشروع</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={newProject.type}
+                      onValueChange={(value) => setNewProject({ ...newProject, type: value })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="اختر نوع المشروع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projectTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.name}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="icon" onClick={() => setIsAddProjectTypeDialogOpen(true)}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectPriority">أهمية المشروع</Label>
                   <Select
-                    value={newProject.type}
-                    onValueChange={(value) => setNewProject({ ...newProject, type: value })}
+                    value={newProject.priority}
+                    onValueChange={(value) => setNewProject({ ...newProject, priority: value as "low" | "medium" | "high" })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر نوع المشروع" />
+                      <SelectValue placeholder="اختر أهمية المشروع" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="سكني">سكني</SelectItem>
-                      <SelectItem value="تجاري">تجاري</SelectItem>
-                      <SelectItem value="صناعي">صناعي</SelectItem>
-                      <SelectItem value="إداري">إداري</SelectItem>
+                      <SelectItem value="low">منخفضة</SelectItem>
+                      <SelectItem value="medium">متوسطة</SelectItem>
+                      <SelectItem value="high">عالية</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -572,43 +930,54 @@ export default function ProjectsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>المهام الافتراضية</Label>
+                <div className="flex items-center justify-between">
+                  <Label>المهام الافتراضية</Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsAddDefaultTaskDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 ml-1" />
+                    إضافة مهمة
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto border rounded-lg p-3">
                   {defaultTasks.map((task, index) => (
                     <div
-                      key={index}
+                      key={task.id}
                       className="flex items-center justify-between space-x-2 space-x-reverse p-2 border rounded"
                     >
                       <div className="flex items-center space-x-2 space-x-reverse">
                         <Checkbox
-                          id={`task-${index}`}
-                          checked={newProject.selectedTasks.includes(task)}
+                          id={`task-${task.id}`}
+                          checked={newProject.selectedTasks.includes(task.title)}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setNewProject({
                                 ...newProject,
-                                selectedTasks: [...newProject.selectedTasks, task],
+                                selectedTasks: [...newProject.selectedTasks, task.title],
                               })
                             } else {
                               setNewProject({
                                 ...newProject,
-                                selectedTasks: newProject.selectedTasks.filter((t) => t !== task),
+                                selectedTasks: newProject.selectedTasks.filter((t) => t !== task.title),
                               })
                               // Remove task assignment
                               const newAssignments = { ...taskAssignments }
-                              delete newAssignments[task]
+                              delete newAssignments[task.title]
                               setTaskAssignments(newAssignments)
                             }
                           }}
                         />
-                        <Label htmlFor={`task-${index}`} className="text-sm flex-1">
-                          {task}
+                        <Label htmlFor={`task-${task.id}`} className="text-sm flex-1">
+                          {task.title}
                         </Label>
                       </div>
-                      {newProject.selectedTasks.includes(task) && (
+                      {newProject.selectedTasks.includes(task.title) && (
                         <Select
-                          value={taskAssignments[task] || ""}
-                          onValueChange={(value) => setTaskAssignments({ ...taskAssignments, [task]: value })}
+                          value={taskAssignments[task.title] || ""}
+                          onValueChange={(value) => setTaskAssignments({ ...taskAssignments, [task.title]: value })}
                         >
                           <SelectTrigger className="w-40">
                             <SelectValue placeholder="اختر المسؤول" />
@@ -715,6 +1084,111 @@ export default function ProjectsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Project Type Dialog */}
+      <Dialog open={isAddProjectTypeDialogOpen} onOpenChange={setIsAddProjectTypeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة نوع مشروع جديد</DialogTitle>
+            <DialogDescription>أدخل بيانات نوع المشروع الجديد</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newProjectTypeName">اسم نوع المشروع *</Label>
+              <Input
+                id="newProjectTypeName"
+                value={newProjectType.name}
+                onChange={(e) => setNewProjectType({ ...newProjectType, name: e.target.value })}
+                placeholder="أدخل اسم نوع المشروع"
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newProjectTypeDescription">الوصف</Label>
+              <Textarea
+                id="newProjectTypeDescription"
+                value={newProjectType.description}
+                onChange={(e) => setNewProjectType({ ...newProjectType, description: e.target.value })}
+                placeholder="أدخل وصف نوع المشروع"
+                className="text-right"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddProjectTypeDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleAddProjectType}>إضافة نوع المشروع</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Default Task Dialog */}
+      <Dialog open={isAddDefaultTaskDialogOpen} onOpenChange={setIsAddDefaultTaskDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة مهمة افتراضية جديدة</DialogTitle>
+            <DialogDescription>أدخل بيانات المهمة الافتراضية الجديدة</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newDefaultTaskTitle">عنوان المهمة *</Label>
+              <Input
+                id="newDefaultTaskTitle"
+                value={newDefaultTask.title}
+                onChange={(e) => setNewDefaultTask({ ...newDefaultTask, title: e.target.value })}
+                placeholder="أدخل عنوان المهمة"
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newDefaultTaskDescription">الوصف</Label>
+              <Textarea
+                id="newDefaultTaskDescription"
+                value={newDefaultTask.description}
+                onChange={(e) => setNewDefaultTask({ ...newDefaultTask, description: e.target.value })}
+                placeholder="أدخل وصف المهمة"
+                className="text-right"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newDefaultTaskCategory">الفئة</Label>
+              <Select
+                value={newDefaultTask.category}
+                onValueChange={(value) => setNewDefaultTask({ ...newDefaultTask, category: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر فئة المهمة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="architectural">معماري</SelectItem>
+                  <SelectItem value="structural">إنشائي</SelectItem>
+                  <SelectItem value="electrical">كهربائي</SelectItem>
+                  <SelectItem value="mechanical">ميكانيكي</SelectItem>
+                  <SelectItem value="plumbing">سباكة</SelectItem>
+                  <SelectItem value="safety">سلامة</SelectItem>
+                  <SelectItem value="permits">تراخيص</SelectItem>
+                  <SelectItem value="supervision">إشراف</SelectItem>
+                  <SelectItem value="other">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddDefaultTaskDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleAddDefaultTask}>إضافة المهمة</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Filters */}
       <div className="flex gap-4 items-center">
         <div className="flex items-center gap-2">
@@ -749,15 +1223,23 @@ export default function ProjectsPage() {
                   <CardTitle className="text-lg">{project.name}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">العميل: {project.clientName}</p>
                 </div>
-                <Badge className={getStatusColor(project.status)}>
-                  {project.status === "in-progress"
-                    ? "قيد التنفيذ"
-                    : project.status === "completed"
-                      ? "مكتمل"
-                      : project.status === "new"
-                        ? "جديد"
-                        : "ملغي"}
-                </Badge>
+                <div className="flex flex-col gap-1">
+                  <Badge className={getStatusColor(project.status)}>
+                    {project.status === "in-progress"
+                      ? "قيد التنفيذ"
+                      : project.status === "completed"
+                        ? "مكتمل"
+                        : project.status === "new"
+                          ? "جديد"
+                          : "ملغي"}
+                  </Badge>
+                  <Badge 
+                    variant={project.priority && project.priority === "high" ? "destructive" : project.priority && project.priority === "medium" ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    {project.priority && project.priority === "high" ? "عالية" : project.priority && project.priority === "medium" ? "متوسطة" : project.priority && project.priority === "low" ? "منخفضة" : "غير محدد"}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -797,6 +1279,8 @@ export default function ProjectsPage() {
                   onClick={() => {
                     setSelectedProject(project)
                     setIsViewDialogOpen(true)
+                    // Fetch project tasks
+                    fetchProjectTasks(project.id)
                   }}
                 >
                   <Eye className="h-4 w-4" />
@@ -811,6 +1295,7 @@ export default function ProjectsPage() {
                       clientName: project.clientName,
                       clientId: project.clientId,
                       type: project.type,
+                      priority: project.priority || "medium" as "low" | "medium" | "high",
                       assignedEngineers: project.assignedEngineers,
                       price: project.price,
                       downPayment: project.downPayment,
@@ -818,6 +1303,9 @@ export default function ProjectsPage() {
                       startDate: new Date(project.startDate).toISOString().split("T")[0],
                       selectedTasks: project.defaultTasks || [],
                     })
+                    
+                    // Fetch project tasks
+                    fetchProjectTasks(project.id)
                     // Set task assignments
                     const assignments: { [key: string]: string } = {}
                     project.defaultTasks?.forEach((task) => {
@@ -857,7 +1345,7 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>نوع المشروع</Label>
                   <p>{selectedProject.type}</p>
@@ -872,6 +1360,14 @@ export default function ProjectsPage() {
                         : selectedProject.status === "new"
                           ? "جديد"
                           : "ملغي"}
+                  </Badge>
+                </div>
+                <div>
+                  <Label>الأهمية</Label>
+                  <Badge 
+                    variant={selectedProject.priority && selectedProject.priority === "high" ? "destructive" : selectedProject.priority && selectedProject.priority === "medium" ? "default" : "secondary"}
+                  >
+                    {selectedProject.priority && selectedProject.priority === "high" ? "عالية" : selectedProject.priority && selectedProject.priority === "medium" ? "متوسطة" : selectedProject.priority && selectedProject.priority === "low" ? "منخفضة" : "غير محدد"}
                   </Badge>
                 </div>
               </div>
@@ -912,6 +1408,34 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
+              <div>
+                <Label>مهام المشروع</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
+                  {projectTasks.length > 0 ? (
+                    projectTasks.map((task) => (
+                      <div key={task.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex-1">
+                          <p className="font-medium">{task.title}</p>
+                          {task.description && (
+                            <p className="text-sm text-muted-foreground">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={task.status === "completed" ? "default" : task.status === "in-progress" ? "secondary" : "outline"}>
+                              {task.status === "completed" ? "مكتملة" : task.status === "in-progress" ? "قيد التنفيذ" : task.status === "pending" ? "في الانتظار" : "ملغية"}
+                            </Badge>
+                            {task.assigneeName && (
+                              <Badge variant="outline">{task.assigneeName}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">لا توجد مهام لهذا المشروع</p>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>تاريخ البداية (ميلادي)</Label>
@@ -929,6 +1453,222 @@ export default function ProjectsPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>تعديل المشروع</DialogTitle>
+            <DialogDescription>عدل تفاصيل المشروع</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editProjectName">اسم المشروع</Label>
+                <Input
+                  id="editProjectName"
+                  value={editProject.name}
+                  onChange={(e) => setEditProject({ ...editProject, name: e.target.value })}
+                  placeholder="أدخل اسم المشروع"
+                  className="text-right"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editClientName">اسم العميل</Label>
+                <Select
+                  value={editProject.clientName}
+                  onValueChange={(value) => setEditProject({ ...editProject, clientName: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر العميل" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.name}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editProjectType">نوع المشروع</Label>
+                <Select
+                  value={editProject.type}
+                  onValueChange={(value) => setEditProject({ ...editProject, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر نوع المشروع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="سكني">سكني</SelectItem>
+                    <SelectItem value="تجاري">تجاري</SelectItem>
+                    <SelectItem value="صناعي">صناعي</SelectItem>
+                    <SelectItem value="إداري">إداري</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editProjectPriority">أهمية المشروع</Label>
+                <Select
+                  value={editProject.priority}
+                  onValueChange={(value) => setEditProject({ ...editProject, priority: value as "low" | "medium" | "high" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر أهمية المشروع" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">منخفضة</SelectItem>
+                    <SelectItem value="medium">متوسطة</SelectItem>
+                    <SelectItem value="high">عالية</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>المهندسون المسؤولون</Label>
+              <Select
+                value=""
+                onValueChange={(value) => {
+                  if (value && !editProject.assignedEngineers.includes(value)) {
+                    setEditProject({
+                      ...editProject,
+                      assignedEngineers: [...editProject.assignedEngineers, value],
+                    })
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر المهندسين" />
+                </SelectTrigger>
+                <SelectContent>
+                  {engineers.map((engineer) => (
+                    <SelectItem key={engineer.id} value={engineer.id}>
+                      {engineer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {editProject.assignedEngineers.map((engineerId) => {
+                  const engineer = engineers.find((e) => e.id === engineerId)
+                  return (
+                    <Badge key={engineerId} variant="secondary" className="flex items-center gap-1">
+                      {engineer?.name}
+                      <button
+                        onClick={() =>
+                          setEditProject({
+                            ...editProject,
+                            assignedEngineers: editProject.assignedEngineers.filter((id) => id !== engineerId),
+                          })
+                        }
+                        className="ml-1 text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editTotalPrice">إجمالي القيمة</Label>
+                <div className="relative">
+                  <Input
+                    id="editTotalPrice"
+                    type="number"
+                    min="0"
+                    value={editProject.price}
+                    onChange={(e) => setEditProject({ ...editProject, price: Number(e.target.value) })}
+                    placeholder="0"
+                    className="text-right pl-12"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <SaudiRiyalIcon size={16} />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editDownPayment">المبلغ المقدم</Label>
+                <div className="relative">
+                  <Input
+                    id="editDownPayment"
+                    type="number"
+                    min="0"
+                    max={editProject.price}
+                    value={editProject.downPayment}
+                    onChange={(e) => setEditProject({ ...editProject, downPayment: Number(e.target.value) })}
+                    placeholder="0"
+                    className="text-right pl-12"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <SaudiRiyalIcon size={16} />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>المبلغ المتبقي</Label>
+                <div className="relative">
+                  <Input
+                    value={convertToArabicNumerals(editProject.price - editProject.downPayment)}
+                    disabled
+                    className="text-right pl-12 bg-muted"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <SaudiRiyalIcon size={16} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editStartDate">تاريخ البداية (ميلادي)</Label>
+                <Input
+                  id="editStartDate"
+                  type="date"
+                  value={editProject.startDate}
+                  onChange={(e) => setEditProject({ ...editProject, startDate: e.target.value })}
+                  className="text-right"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>تاريخ البداية (هجري)</Label>
+                <Input
+                  value={editProject.startDate ? getHijriDate(new Date(editProject.startDate)) : ""}
+                  disabled
+                  className="text-right bg-muted"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editDescription">وصف المشروع</Label>
+              <Textarea
+                id="editDescription"
+                value={editProject.description}
+                onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
+                placeholder="أدخل وصف المشروع"
+                className="text-right"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleEditProject}>حفظ التعديلات</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

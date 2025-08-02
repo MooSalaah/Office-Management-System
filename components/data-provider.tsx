@@ -10,6 +10,7 @@ interface Project {
   clientId: string
   clientName: string
   type: string
+  priority?: "low" | "medium" | "high"
   status: "in-progress" | "completed" | "new" | "cancelled"
   assignedEngineers: string[]
   assignedEngineerNames: string[]

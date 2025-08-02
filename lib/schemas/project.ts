@@ -21,7 +21,7 @@ export const ProjectSchema = z.object({
   city: z.string().optional(),
   assignedTo: z.array(z.string()).default([]), // Array of User IDs
   projectManager: z.string().optional(), // User ID
-  priority: z.enum(["low", "medium", "high", "urgent"]),
+  priority: z.enum(["low", "medium", "high"]),
   tags: z.array(z.string()).default([]),
   attachments: z.array(z.object({
     name: z.string(),
