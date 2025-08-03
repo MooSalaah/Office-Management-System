@@ -71,7 +71,7 @@
 - npm أو yarn
 - حساب MongoDB Atlas
 - حساب Render.com (للـ Backend)
-- حساب Netlify.com (للـ Frontend)
+- حساب Vercel.com (للـ Frontend)
 
 ### خطوات التثبيت
 

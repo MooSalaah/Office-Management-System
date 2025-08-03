@@ -5,13 +5,13 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
-  // Output configuration for Netlify (commented out for API routes)
-  // output: 'export',
-  // trailingSlash: true,
-  
-  // Disable image optimization for static export
+  // Image optimization for Vercel
   images: {
-    unoptimized: true,
+    domains: ['localhost', 'vercel.app'],
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
   },
   
   // Compiler optimization
