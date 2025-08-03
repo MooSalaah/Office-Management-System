@@ -6,7 +6,7 @@
 - MongoDB Atlas (للإنتاج)
 - npm أو yarn
 - حساب Render.com
-- حساب Netlify.com
+- حساب Vercel.com
 
 ## التثبيت والإعداد
 
@@ -40,10 +40,10 @@ MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWr
 JWT_SECRET=your-super-secure-jwt-secret-key-here
 
 # CORS Origin
-CORS_ORIGIN=https://your-frontend-domain.com
+CORS_ORIGIN=https://office-management-system-iota.vercel.app
 
 # API URL
-NEXT_PUBLIC_API_URL=https://your-backend-domain.onrender.com
+NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
 ```
 
 ### 3. تشغيل المشروع
@@ -117,10 +117,10 @@ npm run rebuild
 4. اربط repository
 5. أضف المتغيرات البيئية
 
-### Netlify (Frontend)
-1. اذهب إلى Netlify.com
-2. أنشئ site جديد من GitHub
-3. أضف `NEXT_PUBLIC_API_URL`
+### Vercel (Frontend)
+1. اذهب إلى Vercel.com
+2. أنشئ project جديد من GitHub
+3. أضف `NEXT_PUBLIC_API_URL` و `CORS_ORIGIN`
 
 ## استكشاف الأخطاء
 
@@ -131,12 +131,12 @@ npm run rebuild
 
 ### سجلات الأخطاء:
 - Render: Site > Logs
-- Netlify: Site > Functions > Logs
+- Vercel: Project > Functions > Logs
 
 ## الملفات المضافة
 
 - `render.yaml` - تكوين Render
-- `netlify.toml` - تكوين Netlify
+- `vercel.json` - تكوين Vercel
 - `.npmrc` - تكوين npm
 - `app/api/health/route.ts` - فحص صحة النظام
 - `lib/config.ts` - تكوين النظام 

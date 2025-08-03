@@ -114,10 +114,10 @@ npm start
 4. اربط repository
 5. أضف المتغيرات البيئية
 
-### Netlify (Frontend)
-1. اذهب إلى Netlify.com
-2. أنشئ site جديد من GitHub
-3. أضف `NEXT_PUBLIC_API_URL`
+### Vercel (Frontend)
+1. اذهب إلى Vercel.com
+2. أنشئ project جديد من GitHub
+3. أضف `NEXT_PUBLIC_API_URL` و `CORS_ORIGIN`
 
 ### المتغيرات البيئية المطلوبة
 
@@ -125,14 +125,15 @@ npm start
 ```env
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
 JWT_SECRET=your-super-secure-jwt-secret-key-here
-CORS_ORIGIN=https://your-frontend-domain.com
+CORS_ORIGIN=https://office-management-system-iota.vercel.app
 NODE_ENV=production
 PORT=3000
 ```
 
-#### Netlify (Frontend)
+#### Vercel (Frontend)
 ```env
-NEXT_PUBLIC_API_URL=https://your-backend-domain.onrender.com
+NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
+CORS_ORIGIN=https://office-management-system-iota.vercel.app
 ```
 
 ## هيكل المشروع

@@ -48,7 +48,11 @@ export const useSocket = (userId?: string) => {
       // Initialize socket
       socketRef.current = io(process.env.NODE_ENV === 'production' 
         ? (process.env.NEXT_PUBLIC_API_URL || 'https://office-management-system-v82i.onrender.com')
-        : 'http://localhost:3001'
+        : 'http://localhost:3000',
+        {
+          transports: ['websocket', 'polling'],
+          withCredentials: true
+        }
       )
 
       const socket = socketRef.current

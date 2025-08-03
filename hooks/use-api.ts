@@ -31,6 +31,7 @@ export function useApi<T>() {
           'Content-Type': 'application/json',
           ...options?.headers
         },
+        credentials: 'include',
         ...options
       })
       
@@ -72,6 +73,7 @@ export function useApi<T>() {
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(data)
       })
       
@@ -113,6 +115,7 @@ export function useApi<T>() {
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(data)
       })
       
@@ -153,7 +156,8 @@ export function useApi<T>() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include'
       })
       
       const result: ApiResponse<T> = await response.json()
