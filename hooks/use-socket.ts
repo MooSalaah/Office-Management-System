@@ -44,24 +44,23 @@ export const useSocket = (userId?: string) => {
 
   // Initialize socket connection
   useEffect(() => {
-    // Disable WebSocket in production (Render doesn't support it well)
-    if (process.env.NODE_ENV === 'production') {
-      console.log('WebSocket disabled in production - Render compatibility')
-      return
-    }
-    
     if (typeof window !== 'undefined') {
-      // Initialize socket only in development
-      socketRef.current = io('http://localhost:3000', {
+      // Get API URL from environment
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      
+      // Initialize socket with Railway support
+      socketRef.current = io(apiUrl, {
         transports: ['websocket', 'polling'],
-        withCredentials: true
+        withCredentials: true,
+        timeout: 20000,
+        forceNew: true
       })
 
       const socket = socketRef.current
 
       // Connection events
       socket.on('connect', () => {
-        console.log('Connected to Socket.io server')
+        console.log('Connected to Socket.io server on Railway')
         setIsConnected(true)
         
         // Join user room if userId is provided
@@ -120,11 +119,6 @@ export const useSocket = (userId?: string) => {
 
   // Send user activity
   const sendUserActivity = useCallback((activity: Omit<UserActivity, 'timestamp'>) => {
-    if (process.env.NODE_ENV === 'production') {
-      console.log('WebSocket disabled in production - activity not sent')
-      return
-    }
-    
     if (socketRef.current && isConnected) {
       socketRef.current.emit('user-activity', {
         ...activity,
@@ -135,11 +129,6 @@ export const useSocket = (userId?: string) => {
 
   // Send notification
   const sendNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    if (process.env.NODE_ENV === 'production') {
-      console.log('WebSocket disabled in production - notification not sent')
-      return
-    }
-    
     if (socketRef.current && isConnected) {
       socketRef.current.emit('send-notification', {
         ...notification,
@@ -151,11 +140,6 @@ export const useSocket = (userId?: string) => {
 
   // Emit data update
   const emitDataUpdate = useCallback((change: Omit<DataChange, 'timestamp'>) => {
-    if (process.env.NODE_ENV === 'production') {
-      console.log('WebSocket disabled in production - data update not sent')
-      return
-    }
-    
     if (socketRef.current && isConnected) {
       socketRef.current.emit('data-updated', {
         ...change,
