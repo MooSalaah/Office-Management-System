@@ -7,7 +7,7 @@
     "build": "next build",
     "build:render": "cp next.config.render.mjs next.config.mjs && next build",
     "build:render-full": "npm install --legacy-peer-deps && cp next.config.render.mjs next.config.mjs && next build && echo 'Build completed' && ls -la",
-    "build:netlify": "copy next.config.netlify.mjs next.config.mjs && next build",
+    "build:netlify": "node -e \"require('fs').copyFileSync('next.config.netlify.mjs', 'next.config.mjs')\" && next build",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next && rm -rf node_modules && npm cache clean --force",
