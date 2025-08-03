@@ -309,6 +309,32 @@ npm run reinstall
 npm run rebuild
 ```
 
+## النشر (Deployment)
+
+### Frontend (Vercel)
+```bash
+# في Vercel Dashboard:
+NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
+NODE_ENV=production
+
+# Custom Domain (مستحسن):
+# اذهب إلى Settings > Domains وأضف:
+# office-management.vercel.app
+```
+
+### Backend (Render)
+```bash
+# في Render Dashboard:
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+JWT_SECRET=your-super-secure-jwt-secret
+CORS_ORIGIN=https://office-management.vercel.app
+NODE_ENV=production
+PORT=3000
+```
+
+### 🔗 حل مشكلة تغيير رابط Vercel
+راجع ملف `DEPLOYMENT_FIXED_URL.md` للحصول على حلول شاملة لتثبيت رابط Vercel.
+
 ## الدعم
 
 للدعم والمساعدة، يرجى فتح issue في GitHub أو التواصل عبر البريد الإلكتروني. 

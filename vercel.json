@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "name": "office-management-system",
+  "alias": ["office-management.vercel.app"],
   "builds": [
     {
       "src": "package.json",
@@ -18,5 +20,10 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
   }
 } 
