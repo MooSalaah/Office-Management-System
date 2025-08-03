@@ -5,9 +5,9 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
-  // Output configuration for Netlify
-  output: 'export',
-  trailingSlash: true,
+  // Output configuration for Netlify (commented out for API routes)
+  // output: 'export',
+  // trailingSlash: true,
   
   // Disable image optimization for static export
   images: {
