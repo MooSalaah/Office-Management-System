@@ -319,7 +319,7 @@ NODE_ENV=production
 
 # Custom Domain (مستحسن):
 # اذهب إلى Settings > Domains وأضف:
-# office-management.vercel.app
+# office-management-system-iota.vercel.app
 ```
 
 ### Backend (Render)
@@ -327,7 +327,7 @@ NODE_ENV=production
 # في Render Dashboard:
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
 JWT_SECRET=your-super-secure-jwt-secret
-CORS_ORIGIN=https://office-management.vercel.app
+CORS_ORIGIN=https://office-management-system-iota.vercel.app
 NODE_ENV=production
 PORT=3000
 ```

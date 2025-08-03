@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "office-management-system",
-  "alias": ["office-management.vercel.app"],
+  "alias": ["office-management-system-iota.vercel.app"],
   "builds": [
     {
       "src": "package.json",

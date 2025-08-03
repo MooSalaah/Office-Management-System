@@ -10,12 +10,12 @@
 #### الخطوات:
 1. **في Vercel Dashboard:**
    - اذهب إلى Settings > Domains
-   - أضف domain مخصص مثل: `office-management.vercel.app`
+       - أضف domain مخصص مثل: `office-management-system-iota.vercel.app`
 
 2. **تحديث Environment Variables:**
    ```env
-   # في Render Dashboard:
-   CORS_ORIGIN=https://office-management.vercel.app
+       # في Render Dashboard:
+    CORS_ORIGIN=https://office-management-system-iota.vercel.app
    
    # في Vercel Dashboard:
    NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
@@ -35,7 +35,7 @@ vercel login
 vercel link
 
 # 4. تعيين alias ثابت
-vercel alias set https://office-management-system-d5i27saku.vercel.app office-management.vercel.app
+vercel alias set https://office-management-system-d5i27saku.vercel.app office-management-system-iota.vercel.app
 ```
 
 ### 3. **تحديث vercel.json** ⭐⭐⭐
@@ -78,12 +78,12 @@ vercel alias set https://office-management-system-d5i27saku.vercel.app office-ma
 ### 1. **إنشاء Custom Domain:**
 ```bash
 # في Vercel Dashboard > Settings > Domains
-# أضف: office-management.vercel.app
+# أضف: office-management-system-iota.vercel.app
 ```
 
 ### 2. **تحديث Render Environment Variables:**
 ```env
-CORS_ORIGIN=https://office-management.vercel.app
+CORS_ORIGIN=https://office-management-system-iota.vercel.app
 ```
 
 ### 3. **تحديث Vercel Environment Variables:**
@@ -103,7 +103,7 @@ git push origin main
 ### 1. **اختبار Custom Domain:**
 ```bash
 # افتح المتصفح واذهب إلى:
-https://office-management.vercel.app
+https://office-management-system-iota.vercel.app
 ```
 
 ### 2. **اختبار API:**
@@ -112,13 +112,13 @@ https://office-management.vercel.app
 curl https://office-management-system-v82i.onrender.com/api/health
 
 # اختبار Vercel API:
-curl https://office-management.vercel.app/api/health
+curl https://office-management-system-iota.vercel.app/api/health
 ```
 
 ### 3. **اختبار CORS:**
 ```bash
 # اختبار من Vercel إلى Render:
-curl -H "Origin: https://office-management.vercel.app" \
+curl -H "Origin: https://office-management-system-iota.vercel.app" \
      -H "Access-Control-Request-Method: POST" \
      -H "Access-Control-Request-Headers: Content-Type" \
      -X OPTIONS \
@@ -128,7 +128,7 @@ curl -H "Origin: https://office-management.vercel.app" \
 ## 📋 قائمة التحقق:
 
 ### في Vercel:
-- [ ] Custom domain تم إنشاؤه: `office-management.vercel.app`
+- [ ] Custom domain تم إنشاؤه: `office-management-system-iota.vercel.app`
 - [ ] `NEXT_PUBLIC_API_URL` مضبوط على Render URL
 - [ ] `vercel.json` محدث مع alias
 - [ ] تم إعادة نشر التطبيق
@@ -141,7 +141,7 @@ curl -H "Origin: https://office-management.vercel.app" \
 ## 🎯 النتيجة المتوقعة:
 
 بعد تطبيق الحلول:
-1. **رابط Vercel ثابت**: `https://office-management.vercel.app`
+1. **رابط Vercel ثابت**: `https://office-management-system-iota.vercel.app`
 2. **لا يتغير عند كل deploy**
 3. **CORS يعمل بشكل صحيح**
 4. **API calls تذهب إلى Render**
@@ -158,7 +158,7 @@ vercel login
 vercel link
 
 # 3. تعيين alias
-vercel alias set https://office-management-system-d5i27saku.vercel.app office-management.vercel.app
+vercel alias set https://office-management-system-d5i27saku.vercel.app office-management-system-iota.vercel.app
 
 # 4. نشر مع alias
 vercel --prod
