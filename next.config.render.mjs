@@ -8,6 +8,11 @@ const nextConfig = {
   // Output configuration for Render
   output: 'standalone',
   
+  // Disable image optimization for Render
+  images: {
+    unoptimized: true,
+  },
+  
   // Image optimization
   images: {
     domains: ['localhost'],

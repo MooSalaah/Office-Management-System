@@ -19,10 +19,12 @@ echo "Checking build output..."
 if [ -d ".next" ]; then
     echo "✅ .next directory found!"
     ls -la .next/
+    echo "✅ Build successful!"
 else
     echo "❌ .next directory not found!"
     echo "Current directory contents:"
     ls -la
+    echo "❌ Build failed!"
     exit 1
 fi
 

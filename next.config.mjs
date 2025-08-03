@@ -48,8 +48,9 @@ const nextConfig = {
     return config
   },
   
-  // Output configuration - remove standalone for Netlify compatibility
-  // output: 'standalone',
+  // Output configuration for Netlify (commented out for now)
+  // output: 'export',
+  // trailingSlash: true,
   
   // Image optimization
   images: {
