@@ -15,6 +15,13 @@ git push origin main
 # 5. أضف المتغيرات البيئية:
 ```
 
+### 2. Netlify (Frontend)
+```bash
+# 1. اذهب إلى Netlify.com
+# 2. أنشئ site جديد من GitHub
+# 3. أضف المتغيرات البيئية
+```
+
 ### المتغيرات البيئية المطلوبة
 
 #### Netlify (Frontend)
@@ -110,5 +117,8 @@ npm run build
 ### ملفات التكوين المضافة:
 - `render.yaml` - تكوين Render
 - `netlify.toml` - تكوين Netlify
+- `next.config.render.mjs` - تكوين Next.js لـ Render
 - `.npmrc` - تكوين npm
-- `app/api/health/route.ts` - فحص صحة النظام 
+- `app/api/health/route.ts` - فحص صحة النظام
+- `lib/config.ts` - تكوين النظام
+- `jsconfig.json` - تكوين مسارات TypeScript 

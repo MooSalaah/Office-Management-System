@@ -5,13 +5,16 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Next.js routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# API routes
 [functions]
   directory = "app/api"
+  node_bundler = "esbuild"
 
 [[headers]]
   for = "/*"

@@ -70,6 +70,8 @@
 - Node.js 18+
 - npm أو yarn
 - حساب MongoDB Atlas
+- حساب Render.com (للـ Backend)
+- حساب Netlify.com (للـ Frontend)
 
 ### خطوات التثبيت
 
@@ -101,6 +103,36 @@ npm run dev
 # بناء الإنتاج
 npm run build
 npm start
+```
+
+## 🚀 النشر
+
+### Render (Backend)
+1. ارفع الكود إلى GitHub
+2. اذهب إلى Render.com
+3. أنشئ Web Service جديد
+4. اربط repository
+5. أضف المتغيرات البيئية
+
+### Netlify (Frontend)
+1. اذهب إلى Netlify.com
+2. أنشئ site جديد من GitHub
+3. أضف `NEXT_PUBLIC_API_URL`
+
+### المتغيرات البيئية المطلوبة
+
+#### Render (Backend)
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+JWT_SECRET=your-super-secure-jwt-secret-key-here
+CORS_ORIGIN=https://your-frontend-domain.com
+NODE_ENV=production
+PORT=3000
+```
+
+#### Netlify (Frontend)
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-domain.onrender.com
 ```
 
 ## هيكل المشروع

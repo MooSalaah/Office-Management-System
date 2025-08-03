@@ -5,37 +5,16 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
-  // Output configuration
-  output: 'standalone',
-  
-  // Image optimization
-  images: {
-    domains: ['localhost'],
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
-  },
-  
-  // Compiler optimization
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
-  
-  // Bundle analyzer (optional)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config) => {
-      config.plugins.push(
-        new (require('@next/bundle-analyzer')({
-          enabled: true,
-        }))()
-      )
-      return config
-    },
-  }),
-  
-  // Reduce bundle size and improve performance
+  // Resolve configuration
   webpack: (config, { dev, isServer }) => {
+    // Add resolve fallbacks
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    }
+    
     // Optimize bundle size
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
@@ -68,6 +47,35 @@ const nextConfig = {
     
     return config
   },
+  
+  // Output configuration - remove standalone for Netlify compatibility
+  // output: 'standalone',
+  
+  // Image optimization
+  images: {
+    domains: ['localhost'],
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+  },
+  
+  // Compiler optimization
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  
+  // Bundle analyzer (optional)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config) => {
+      config.plugins.push(
+        new (require('@next/bundle-analyzer')({
+          enabled: true,
+        }))()
+      )
+      return config
+    },
+  }),
   
   // Performance optimizations
   poweredByHeader: false, // Remove X-Powered-By header
