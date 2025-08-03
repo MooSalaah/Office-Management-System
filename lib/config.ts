@@ -7,12 +7,13 @@ export const hasApiUrl = !!API_BASE_URL
 
 // Get the full API URL for a given endpoint
 export function getApiUrl(endpoint: string): string {
-  // If we have a custom API URL (production), use it
-  if (hasApiUrl && isProduction) {
-    return `${API_BASE_URL}${endpoint}`
+  // In production, always use the external API URL (Render)
+  if (isProduction) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://office-management-system-v82i.onrender.com'
+    return `${apiUrl}${endpoint}`
   }
   
-  // Otherwise, use relative URL (development or same domain)
+  // In development, use relative URL
   return endpoint
 }
 
