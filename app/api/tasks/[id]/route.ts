@@ -3,6 +3,11 @@ export const dynamic = "force-static"
 import { NextRequest, NextResponse } from 'next/server'
 import { TaskUpdateSchema } from '@/lib/schemas'
 
+// Generate static params for export
+export async function generateStaticParams() {
+  return []
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

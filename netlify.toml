@@ -1,7 +1,6 @@
 [build]
   command = "npm run build:netlify"
   publish = ".next"
-  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -12,10 +11,10 @@
   to = "/index.html"
   status = 200
 
-# API routes
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
+# API routes (commented out for static export)
+# [functions]
+#   directory = "netlify/functions"
+#   node_bundler = "esbuild"
 
 # Headers
 [[headers]]
@@ -32,7 +31,8 @@
   to = "/_next/:splat"
   status = 200
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200 
+# API redirects (commented out for static export)
+# [[redirects]]
+#   from = "/api/*"
+#   to = "/.netlify/functions/api/:splat"
+#   status = 200 
