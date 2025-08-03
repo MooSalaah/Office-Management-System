@@ -94,6 +94,7 @@ curl https://office-management-system-v82i.onrender.com/api/projects
 3. **خطأ JWT**: تأكد من إعداد `JWT_SECRET`
 4. **خطأ API URL**: تأكد من إعداد `NEXT_PUBLIC_API_URL` في Netlify
 5. **خطأ البناء**: تأكد من وجود جميع الملفات المطلوبة
+6. **خطأ TailwindCSS**: تأكد من وجود `tailwindcss` و `postcss` في `dependencies`
 
 ### حل مشاكل البناء:
 ```bash

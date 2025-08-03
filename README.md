@@ -288,6 +288,26 @@ socket.on('data-changed', (change) => {
 
 هذا المشروع مرخص تحت رخصة MIT.
 
+## استكشاف الأخطاء
+
+### مشاكل شائعة:
+- **خطأ في المكونات**: تأكد من وجود جميع ملفات UI
+- **خطأ في قاعدة البيانات**: تأكد من صحة MongoDB URI
+- **خطأ في البناء**: جرب `npm run rebuild`
+- **خطأ TailwindCSS**: تأكد من وجود `tailwindcss` و `postcss` في `dependencies`
+
+### حل مشاكل البناء:
+```bash
+# تنظيف cache
+npm run clean
+
+# إعادة تثبيت التبعيات
+npm run reinstall
+
+# إعادة البناء
+npm run rebuild
+```
+
 ## الدعم
 
 للدعم والمساعدة، يرجى فتح issue في GitHub أو التواصل عبر البريد الإلكتروني. 
