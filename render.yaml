@@ -3,7 +3,7 @@ services:
     name: office-management-system
     env: node
     plan: starter
-    buildCommand: npm install --legacy-peer-deps && cp next.config.render.mjs next.config.mjs && npm run build
+    buildCommand: npm run build:render-full
     startCommand: npm start
     envVars:
       - key: NODE_ENV

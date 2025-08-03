@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:render": "cp next.config.render.mjs next.config.mjs && next build",
-    "build:render-full": "npm install --legacy-peer-deps && cp next.config.render.mjs next.config.mjs && next build",
+    "build:render-full": "npm install --legacy-peer-deps && cp next.config.render.mjs next.config.mjs && next build && echo 'Build completed' && ls -la",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next && rm -rf node_modules && npm cache clean --force",
