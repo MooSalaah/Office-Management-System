@@ -48,7 +48,7 @@ const nextConfig = {
     return config
   },
   
-  // Output configuration for Netlify (commented out for now)
+  // Output configuration for Netlify (commented out for API routes)
   // output: 'export',
   // trailingSlash: true,
   
