@@ -1,4 +1,4 @@
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Server as SocketIOServer } from 'socket.io'
@@ -32,13 +32,16 @@ export async function GET(req: NextRequest) {
                 process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app',
                 'https://newcornersa.netlify.app',
                 'https://*.netlify.app',
-                'https://*.vercel.app'
+                'https://*.vercel.app',
+                'https://*.onrender.com'
               ] 
             : ['http://localhost:3000', 'http://localhost:3001'],
           methods: ['GET', 'POST', 'OPTIONS'],
           credentials: true,
           allowedHeaders: ['Content-Type', 'Authorization']
-        }
+        },
+        transports: ['polling', 'websocket'],
+        allowEIO3: true
       })
       
       // @ts-ignore - Next.js specific

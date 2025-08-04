@@ -1,4 +1,4 @@
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from 'next/server'
 import { UserCreateSchema } from '@/lib/schemas'
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Emit real-time update
     try {
       // @ts-ignore - Next.js specific
-      const io = req.socket?.server?.io
+      const io = request.socket?.server?.io
       if (io) {
         io.emit('data-changed', {
           type: 'create',

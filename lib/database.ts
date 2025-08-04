@@ -46,4 +46,16 @@ export async function getDatabase(): Promise<Db> {
 export async function closeConnection(): Promise<void> {
   const client = await clientPromise
   await client.close()
+}
+
+// Add connectDB function for server.js compatibility
+export async function connectDB(): Promise<void> {
+  try {
+    const client = await clientPromise
+    await client.db(DB_CONFIG.name).admin().ping()
+    console.log('✅ MongoDB connected successfully')
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error)
+    throw error
+  }
 } 

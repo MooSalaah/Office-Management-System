@@ -68,7 +68,7 @@ export const useSocket = (userId?: string) => {
         reconnectionDelay: 1000,
         extraHeaders: {
           'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
-            ? 'https://newcornersa.netlify.app'
+            ? process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app'
             : 'http://localhost:3000'
         }
       })
@@ -86,6 +86,11 @@ export const useSocket = (userId?: string) => {
           socket.emit('join-user', userId)
           socket.emit('user-online', userId)
         }
+      })
+
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error)
+        setIsConnected(false)
       })
 
       socket.on('disconnect', () => {
