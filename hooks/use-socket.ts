@@ -48,19 +48,32 @@ export const useSocket = (userId?: string) => {
       // Get API URL from environment
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
       
-      // Initialize socket with Railway support
+      // Check if we're in production and if Render is being used
+      const isProduction = process.env.NODE_ENV === 'production'
+      const isRenderBackend = apiUrl.includes('onrender.com')
+      
+      // Use polling for Render (better compatibility)
+      const transports = isProduction && isRenderBackend 
+        ? ['polling'] // Only polling for Render
+        : ['polling', 'websocket'] // Both for other platforms
+      
+      // Initialize socket with appropriate transports
       socketRef.current = io(apiUrl, {
-        transports: ['websocket', 'polling'],
+        transports: transports,
         withCredentials: true,
         timeout: 20000,
-        forceNew: true
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
       })
 
       const socket = socketRef.current
 
       // Connection events
       socket.on('connect', () => {
-        console.log('Connected to Socket.io server on Railway')
+        const transport = socket.io.engine.transport.name
+        console.log(`Connected to Socket.io server using ${transport} transport`)
         setIsConnected(true)
         
         // Join user room if userId is provided
