@@ -32,7 +32,6 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         {/* Preload critical resources */}
-        <link rel="preload" href="/placeholder.svg" as="image" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
       </head>

@@ -38,10 +38,20 @@ export async function GET(req: NextRequest) {
             : ['http://localhost:3000', 'http://localhost:3001'],
           methods: ['GET', 'POST', 'OPTIONS'],
           credentials: true,
-          allowedHeaders: ['Content-Type', 'Authorization']
+          allowedHeaders: ['Content-Type', 'Authorization'],
+          preflightContinue: false,
+          optionsSuccessStatus: 200
         },
-        transports: ['polling', 'websocket'],
-        allowEIO3: true
+        transports: ['polling'],
+        allowEIO3: true,
+        pingTimeout: 60000,
+        pingInterval: 25000,
+        upgradeTimeout: 10000,
+        maxHttpBufferSize: 1e6,
+        allowRequest: (req, callback) => {
+          // Allow all requests for now
+          callback(null, true)
+        }
       })
       
       // @ts-ignore - Next.js specific

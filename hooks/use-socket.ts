@@ -48,24 +48,19 @@ export const useSocket = (userId?: string) => {
       // Get API URL from environment
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
       
-      // Check if we're in production and if Render is being used
-      const isProduction = process.env.NODE_ENV === 'production'
-      const isRenderBackend = apiUrl.includes('onrender.com')
+      // Always use polling for better compatibility with Render
+      const transports = ['polling']
       
-      // Use polling for Render (better compatibility)
-      const transports = isProduction && isRenderBackend 
-        ? ['polling'] // Only polling for Render
-        : ['polling', 'websocket'] // Both for other platforms
-      
-      // Initialize socket with appropriate transports
+      // Initialize socket with polling only
       socketRef.current = io(apiUrl, {
         transports: transports,
         withCredentials: true,
         timeout: 20000,
         forceNew: true,
         reconnection: true,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
         extraHeaders: {
           'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
             ? process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app'
@@ -96,6 +91,21 @@ export const useSocket = (userId?: string) => {
       socket.on('disconnect', () => {
         console.log('Disconnected from Socket.io server')
         setIsConnected(false)
+      })
+
+      socket.on('reconnect', (attemptNumber) => {
+        console.log(`Reconnected after ${attemptNumber} attempts`)
+        setIsConnected(true)
+        
+        // Rejoin user room after reconnection
+        if (userId) {
+          socket.emit('join-user', userId)
+          socket.emit('user-online', userId)
+        }
+      })
+
+      socket.on('reconnect_error', (error) => {
+        console.error('Reconnection error:', error)
       })
 
       // Listen for notifications
