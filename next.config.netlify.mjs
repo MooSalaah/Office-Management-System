@@ -1,14 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // لا نستخدم output: export لأن لدينا API routes
+  // output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true,
     domains: ['localhost', 'netlify.app']
   },
-  experimental: {
-    serverComponentsExternalPackages: ['mongodb']
-  },
+  serverExternalPackages: ['mongodb'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
