@@ -43,10 +43,10 @@ publish = ".next"
 - إزالة redirects غير الضرورية
 - الاحتفاظ بـ CORS headers
 
-### **3. إنشاء Netlify Function:**
-- إنشاء `netlify/functions/api.js` للتعامل مع API routes
-- دعم جميع HTTP methods
-- معالجة الأخطاء
+### **3. إزالة Netlify Functions:**
+- حذف `netlify/functions/api.js` لتقليل الحجم
+- Next.js يتعامل مع API routes تلقائياً
+- إضافة `.netlifyignore` لتقليل حجم النشر
 
 ## 🚀 **النتيجة المتوقعة:**
 
@@ -61,7 +61,8 @@ publish = ".next"
 ### **قبل إعادة النشر:**
 - [ ] تم تحديث `next.config.netlify.mjs`
 - [ ] تم تحديث `netlify.toml`
-- [ ] تم إنشاء `netlify/functions/api.js`
+- [ ] تم حذف `netlify/functions/api.js`
+- [ ] تم إنشاء `.netlifyignore`
 - [ ] تم إضافة Environment variables في Netlify
 
 ### **في Netlify Dashboard:**

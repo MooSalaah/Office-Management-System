@@ -8,9 +8,10 @@
 # Netlify will handle API routes automatically
 # No need for manual redirects
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
+# لا نحتاج functions لأن Next.js يتعامل مع API routes تلقائياً
+# [functions]
+#   directory = "netlify/functions"
+#   node_bundler = "esbuild"
 
 [[headers]]
   for = "/api/*"

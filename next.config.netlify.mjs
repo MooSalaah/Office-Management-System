@@ -8,6 +8,10 @@ const nextConfig = {
     domains: ['localhost', 'netlify.app']
   },
   serverExternalPackages: ['mongodb'],
+  // تحسين الحجم
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons']
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -18,6 +22,24 @@ const nextConfig = {
         crypto: false,
       }
     }
+    
+    // تحسين حجم الباندل
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+          },
+        },
+      }
+    }
+    
     return config
   }
 }
