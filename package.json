@@ -8,6 +8,7 @@
     "build:render": "cp next.config.render.mjs next.config.mjs && next build",
     "build:render-full": "npm install --legacy-peer-deps && cp next.config.render.mjs next.config.mjs && next build && echo 'Build completed' && ls -la",
     "build:vercel": "next build",
+    "build:netlify": "next build",
 
     "start": "next start",
     "lint": "next lint",
