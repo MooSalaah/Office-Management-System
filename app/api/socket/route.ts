@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
             ? [
                 process.env.CORS_ORIGIN || 'https://office-management-system-iota.vercel.app',
                 'https://office-management-system-nfxbdaeoa.vercel.app',
-                'https://office-management-system-iota.vercel.app'
+                'https://office-management-system-iota.vercel.app',
+                'https://newcornersa.netlify.app',
+                'https://*.netlify.app'
               ] 
             : ['http://localhost:3000', 'http://localhost:3001'],
           methods: ['GET', 'POST'],
