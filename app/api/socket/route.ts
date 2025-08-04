@@ -13,7 +13,11 @@ export async function GET(req: NextRequest) {
       const io = new SocketIOServer(req.socket.server, {
         cors: {
           origin: process.env.NODE_ENV === 'production' 
-            ? [process.env.CORS_ORIGIN || 'https://office-management-system-iota.vercel.app'] 
+            ? [
+                process.env.CORS_ORIGIN || 'https://office-management-system-iota.vercel.app',
+                'https://office-management-system-nfxbdaeoa.vercel.app',
+                'https://office-management-system-iota.vercel.app'
+              ] 
             : ['http://localhost:3000', 'http://localhost:3001'],
           methods: ['GET', 'POST'],
           credentials: true
