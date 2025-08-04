@@ -65,7 +65,12 @@ export const useSocket = (userId?: string) => {
         forceNew: true,
         reconnection: true,
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
+        extraHeaders: {
+          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+            ? 'https://newcornersa.netlify.app'
+            : 'http://localhost:3000'
+        }
       })
 
       const socket = socketRef.current

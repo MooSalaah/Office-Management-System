@@ -15,19 +15,19 @@ git push origin main
 # 5. أضف المتغيرات البيئية:
 ```
 
-### 2. Vercel (Frontend)
+### 2. Netlify (Frontend)
 ```bash
-# 1. اذهب إلى Vercel.com
-# 2. أنشئ project جديد من GitHub
+# 1. اذهب إلى Netlify.com
+# 2. أنشئ site جديد من GitHub
 # 3. أضف المتغيرات البيئية
 ```
 
 ### المتغيرات البيئية المطلوبة
 
-#### Vercel (Frontend)
+#### Netlify (Frontend)
 ```env
 NEXT_PUBLIC_API_URL=https://office-management-system-v82i.onrender.com
-CORS_ORIGIN=https://office-management-system-iota.vercel.app
+CORS_ORIGIN=https://newcornersa.netlify.app
 ```
 
 #### Render (Backend)

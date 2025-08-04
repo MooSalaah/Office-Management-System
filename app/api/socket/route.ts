@@ -4,6 +4,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Server as SocketIOServer } from 'socket.io'
 
 export async function GET(req: NextRequest) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+          ? process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app'
+          : 'http://localhost:3000',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Credentials': 'true'
+      }
+    })
+  }
+
   try {
     // @ts-ignore - Next.js specific
     if (!req.socket.server.io) {
@@ -14,15 +29,15 @@ export async function GET(req: NextRequest) {
         cors: {
           origin: process.env.NODE_ENV === 'production' 
             ? [
-                process.env.CORS_ORIGIN || 'https://office-management-system-iota.vercel.app',
-                'https://office-management-system-nfxbdaeoa.vercel.app',
-                'https://office-management-system-iota.vercel.app',
+                process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app',
                 'https://newcornersa.netlify.app',
-                'https://*.netlify.app'
+                'https://*.netlify.app',
+                'https://*.vercel.app'
               ] 
             : ['http://localhost:3000', 'http://localhost:3001'],
-          methods: ['GET', 'POST'],
-          credentials: true
+          methods: ['GET', 'POST', 'OPTIONS'],
+          credentials: true,
+          allowedHeaders: ['Content-Type', 'Authorization']
         }
       })
       
