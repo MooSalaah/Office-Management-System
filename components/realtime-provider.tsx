@@ -105,11 +105,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({
 
 // Real-time indicators component
 const RealtimeIndicators: React.FC = () => {
-  const { 
-    isConnected, 
-    notifications, 
-    userActivities, 
-    onlineUsers 
+  const {
+    isConnected,
+    notifications,
+    userActivities,
+    onlineUsers,
+    clearNotifications,
+    removeNotification,
   } = useRealtime()
 
   const formatTime = (date: Date) => {
@@ -173,10 +175,10 @@ const RealtimeIndicators: React.FC = () => {
             <div className="flex items-center justify-between">
               <h4 className="font-medium">الإشعارات</h4>
               {notifications.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => useRealtime().clearNotifications()}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearNotifications}
                 >
                   مسح الكل
                 </Button>
@@ -198,7 +200,7 @@ const RealtimeIndicators: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => useRealtime().removeNotification(notification.id)}
+                          onClick={() => removeNotification(notification.id)}
                         >
                           ×
                         </Button>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { io, Socket } from 'socket.io-client'
 
 export interface Notification {
   id: string
@@ -40,146 +39,195 @@ export const useSocket = (userId?: string) => {
   const [userStatuses, setUserStatuses] = useState<Map<string, UserStatus>>(new Map())
   const [onlineUsers, setOnlineUsers] = useState<string[]>([])
   
-  const socketRef = useRef<Socket | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Get API URL from environment
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-      
-      // Always use polling for better compatibility with Render
-      const transports = ['polling']
-      
-      // Initialize socket with polling only
-      socketRef.current = io(apiUrl, {
-        transports: transports,
-        withCredentials: true,
-        timeout: 20000,
-        forceNew: true,
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        extraHeaders: {
-          'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
-            ? process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app'
-            : 'http://localhost:3000'
+  // Connect to API
+  const connect = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      const response = await fetch(`${apiUrl}/api/socket?action=connect&userId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
       })
 
-      const socket = socketRef.current
-
-      // Connection events
-      socket.on('connect', () => {
-        const transport = socket.io.engine.transport.name
-        console.log(`Connected to Socket.io server using ${transport} transport`)
+      if (response.ok) {
+        const data = await response.json()
         setIsConnected(true)
-        
-        // Join user room if userId is provided
-        if (userId) {
-          socket.emit('join-user', userId)
-          socket.emit('user-online', userId)
+        setOnlineUsers(data.onlineUsers || [])
+        setNotifications(
+          (data.notifications || []).map((n: any) => ({
+            ...n,
+            timestamp: new Date(n.timestamp),
+          }))
+        )
+        setUserActivities(
+          (data.userActivities || []).map((a: any) => ({
+            ...a,
+            timestamp: new Date(a.timestamp),
+          }))
+        )
+        console.log('✅ Connected to API successfully')
+      } else {
+        console.error('❌ Connection failed:', response.status)
+        setIsConnected(false)
+      }
+    } catch (error) {
+      console.error('❌ Connection error:', error)
+      setIsConnected(false)
+    }
+  }, [userId, apiUrl])
+
+  // Disconnect from API
+  const disconnect = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      await fetch(`${apiUrl}/api/socket?action=disconnect&userId=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      setIsConnected(false)
+      console.log('✅ Disconnected from API')
+    } catch (error) {
+      console.error('❌ Disconnect error:', error)
+    }
+  }, [userId, apiUrl])
+
+  // Poll for updates
+  const pollForUpdates = useCallback(async () => {
+    if (!isConnected) return
+
+    try {
+      // Poll for notifications
+      const notificationsResponse = await fetch(`${apiUrl}/api/socket?action=notifications`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
       })
 
-      socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error)
-        setIsConnected(false)
-      })
+      if (notificationsResponse.ok) {
+        const data = await notificationsResponse.json()
+        setNotifications(
+          (data.notifications || []).map((n: any) => ({
+            ...n,
+            timestamp: new Date(n.timestamp),
+          }))
+        )
+      }
 
-      socket.on('disconnect', () => {
-        console.log('Disconnected from Socket.io server')
-        setIsConnected(false)
-      })
-
-      socket.on('reconnect', (attemptNumber) => {
-        console.log(`Reconnected after ${attemptNumber} attempts`)
-        setIsConnected(true)
-        
-        // Rejoin user room after reconnection
-        if (userId) {
-          socket.emit('join-user', userId)
-          socket.emit('user-online', userId)
+      // Poll for activities
+      const activitiesResponse = await fetch(`${apiUrl}/api/socket?action=activities`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
       })
 
-      socket.on('reconnect_error', (error) => {
-        console.error('Reconnection error:', error)
+      if (activitiesResponse.ok) {
+        const data = await activitiesResponse.json()
+        setUserActivities(
+          (data.userActivities || []).map((a: any) => ({
+            ...a,
+            timestamp: new Date(a.timestamp),
+          }))
+        )
+      }
+
+      // Poll for online users
+      const onlineUsersResponse = await fetch(`${apiUrl}/api/socket?action=online-users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       })
 
-      // Listen for notifications
-      socket.on('new-notification', (notification: Notification) => {
-        setNotifications(prev => [notification, ...prev.slice(0, 9)]) // Keep last 10 notifications
-      })
+      if (onlineUsersResponse.ok) {
+        const data = await onlineUsersResponse.json()
+        setOnlineUsers(data.onlineUsers || [])
+      }
+    } catch (error) {
+      console.error('❌ Poll error:', error)
+      setIsConnected(false)
+    }
+  }, [isConnected, apiUrl])
 
-      // Listen for user activities
-      socket.on('user-activity-update', (activity: UserActivity) => {
-        setUserActivities(prev => [activity, ...prev.slice(0, 19)]) // Keep last 20 activities
-      })
-
-      // Listen for data changes
-      socket.on('data-changed', (change: DataChange) => {
-        // Emit custom event for data changes
-        window.dispatchEvent(new CustomEvent('data-changed', { detail: change }))
-      })
-
-      // Listen for user status changes
-      socket.on('user-status-changed', (status: UserStatus) => {
-        setUserStatuses(prev => {
-          const newMap = new Map(prev)
-          newMap.set(status.userId, status)
-          return newMap
+  // Send data to API
+  const sendToAPI = useCallback(async (type: string, data: any) => {
+    try {
+      const response = await fetch(`${apiUrl}/api/socket`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          data,
+          userId
         })
-
-        // Update online users list
-        if (status.status === 'online') {
-          setOnlineUsers(prev => [...new Set([...prev, status.userId])])
-        } else if (status.status === 'offline') {
-          setOnlineUsers(prev => prev.filter(id => id !== status.userId))
-        }
       })
 
-      // Cleanup on unmount
-      return () => {
-        if (userId) {
-          socket.emit('user-away', userId)
-        }
-        socket.disconnect()
+      if (!response.ok) {
+        throw new Error(`Failed to send data: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('❌ Send error:', error)
+    }
+  }, [apiUrl, userId])
+
+  // Initialize connection
+  useEffect(() => {
+    if (userId) {
+      connect()
+    }
+
+    return () => {
+      if (userId) {
+        disconnect()
       }
     }
-  }, [userId])
+  }, [userId, connect, disconnect])
+
+  // Start polling
+  useEffect(() => {
+    if (isConnected) {
+      // Poll every 3 seconds
+      intervalRef.current = setInterval(pollForUpdates, 3000)
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [isConnected, pollForUpdates])
 
   // Send user activity
   const sendUserActivity = useCallback((activity: Omit<UserActivity, 'timestamp'>) => {
-    if (socketRef.current && isConnected) {
-      socketRef.current.emit('user-activity', {
-        ...activity,
-        timestamp: new Date()
-      })
-    }
-  }, [isConnected])
+    sendToAPI('user-activity', activity)
+  }, [sendToAPI])
 
   // Send notification
   const sendNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    if (socketRef.current && isConnected) {
-      socketRef.current.emit('send-notification', {
-        ...notification,
-        id: Math.random().toString(36).substr(2, 9),
-        timestamp: new Date()
-      })
-    }
-  }, [isConnected])
+    sendToAPI('notification', notification)
+  }, [sendToAPI])
 
   // Emit data update
   const emitDataUpdate = useCallback((change: Omit<DataChange, 'timestamp'>) => {
-    if (socketRef.current && isConnected) {
-      socketRef.current.emit('data-updated', {
-        ...change,
-        timestamp: new Date()
-      })
-    }
-  }, [isConnected])
+    sendToAPI('user-activity', {
+      userId: change.userId,
+      action: change.type,
+      entity: change.entity,
+      entityId: change.entityId
+    })
+  }, [sendToAPI])
 
   // Clear notifications
   const clearNotifications = useCallback(() => {
