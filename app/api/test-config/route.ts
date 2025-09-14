@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getApiUrl } from '@/lib/config'
+import { getDatabase } from '@/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,20 +13,12 @@ export async function GET(request: NextRequest) {
       PORT: process.env.PORT
     }
 
-    // Test getApiUrl function
-    const testEndpoints = {
-      projects: getApiUrl('/api/projects'),
-      health: getApiUrl('/api/health'),
-      users: getApiUrl('/api/users')
-    }
-
     // Test database connection
     let dbStatus = 'not-tested'
     let dbError = null
-
+    
     if (process.env.MONGODB_URI) {
       try {
-        const { getDatabase } = await import('@/lib/database')
         const db = await getDatabase()
         await db.admin().ping()
         dbStatus = 'connected'
@@ -36,28 +28,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get request info
-    const requestInfo = {
-      url: request.url,
-      method: request.method,
-      headers: Object.fromEntries(request.headers.entries()),
-      origin: request.headers.get('origin'),
-      host: request.headers.get('host')
-    }
-
     return NextResponse.json({
       success: true,
-      message: 'Configuration test results',
+      message: 'Test config information',
       timestamp: new Date().toISOString(),
       environment: envVars,
-      apiUrls: testEndpoints,
       database: {
         status: dbStatus,
         error: dbError
       },
-      request: requestInfo,
-      isProduction: process.env.NODE_ENV === 'production',
-      apiUrl: process.env.NEXT_PUBLIC_API_URL || 'NOT_SET'
     })
   } catch (error) {
     console.error('Test config API error:', error)
@@ -70,4 +49,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

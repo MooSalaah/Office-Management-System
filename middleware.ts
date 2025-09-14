@@ -1,7 +1,20 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { jwtVerify } from 'jose'
 
-export function middleware(request: NextRequest) {
+const PUBLIC_ROUTES = ['/api/health', '/api/debug', '/api/auth/login', '/api/test-config']
+
+async function verifyToken(token: string) {
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
+    return payload
+  } catch (error) {
+    return null
+  }
+}
+
+export async function middleware(request: NextRequest) {
   // Handle CORS for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const response = NextResponse.next()
@@ -24,6 +37,34 @@ export function middleware(request: NextRequest) {
         headers: response.headers
       })
     }
+
+    // Check if the route is public
+    if (PUBLIC_ROUTES.includes(request.nextUrl.pathname)) {
+      return response
+    }
+
+    // Verify JWT token
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.split(' ')[1]
+
+    if (!token) {
+      return new NextResponse(
+        JSON.stringify({ success: false, error: 'Authorization token not found' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const payload = await verifyToken(token)
+
+    if (!payload) {
+      return new NextResponse(
+        JSON.stringify({ success: false, error: 'Invalid or expired token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Add user ID to the request headers
+    response.headers.set('X-User-Id', payload.userId as string)
     
     return response
   }

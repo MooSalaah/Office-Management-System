@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { NextRequest, NextResponse } from 'next/server'
+import { handleError } from '@/lib/api-utils'
+
 export async function GET(request: NextRequest) {
   try {
     // Get environment variables
@@ -50,14 +53,6 @@ export async function GET(request: NextRequest) {
       apiUrl: process.env.NEXT_PUBLIC_API_URL || 'NOT_SET'
     })
   } catch (error) {
-    console.error('Debug API error:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 } 

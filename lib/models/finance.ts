@@ -3,41 +3,43 @@ import { getDatabase } from '../database'
 import { Transaction, TransactionCreate, TransactionUpdate, Invoice, InvoiceCreate, InvoiceUpdate } from '../schemas/finance'
 
 export class FinanceModel {
-  private transactionsCollection!: Collection
-  private invoicesCollection!: Collection
+  private transactionsCollection: Promise<Collection>
+  private invoicesCollection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.transactionsCollection = this.initCollection('transactions')
+    this.invoicesCollection = this.initCollection('invoices')
   }
 
-  private async initCollection() {
-    if (this.transactionsCollection) return
-    
+  private async initCollection(collectionName: string): Promise<Collection> {
     const db = await getDatabase()
-    this.transactionsCollection = db.collection('transactions')
-    this.invoicesCollection = db.collection('invoices')
+    const collection = db.collection(collectionName)
     
-    // Create indexes for transactions
-    await this.transactionsCollection.createIndex({ type: 1 })
-    await this.transactionsCollection.createIndex({ category: 1 })
-    await this.transactionsCollection.createIndex({ status: 1 })
-    await this.transactionsCollection.createIndex({ projectId: 1 })
-    await this.transactionsCollection.createIndex({ clientId: 1 })
-    await this.transactionsCollection.createIndex({ date: 1 })
-    await this.transactionsCollection.createIndex({ createdAt: -1 })
-    
-    // Create indexes for invoices
-    await this.invoicesCollection.createIndex({ invoiceNumber: 1 })
-    await this.invoicesCollection.createIndex({ clientId: 1 })
-    await this.invoicesCollection.createIndex({ projectId: 1 })
-    await this.invoicesCollection.createIndex({ status: 1 })
-    await this.invoicesCollection.createIndex({ dueDate: 1 })
-    await this.invoicesCollection.createIndex({ createdAt: -1 })
+    if (collectionName === 'transactions') {
+      // Create indexes for transactions
+      await collection.createIndex({ type: 1 })
+      await collection.createIndex({ category: 1 })
+      await collection.createIndex({ status: 1 })
+      await collection.createIndex({ projectId: 1 })
+      await collection.createIndex({ clientId: 1 })
+      await collection.createIndex({ date: 1 })
+      await collection.createIndex({ createdAt: -1 })
+    } else if (collectionName === 'invoices') {
+      // Create indexes for invoices
+      await collection.createIndex({ invoiceNumber: 1 })
+      await collection.createIndex({ clientId: 1 })
+      await collection.createIndex({ projectId: 1 })
+      await collection.createIndex({ status: 1 })
+      await collection.createIndex({ dueDate: 1 })
+      await collection.createIndex({ createdAt: -1 })
+    }
+
+    return collection
   }
 
   // Transaction methods
   async createTransaction(transactionData: TransactionCreate): Promise<Transaction> {
-    await this.initCollection()
+    const transactionsCollection = await this.transactionsCollection
     
     const transaction: Omit<Transaction, '_id'> = {
       ...transactionData,
@@ -45,23 +47,23 @@ export class FinanceModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.transactionsCollection.insertOne(transaction)
+    const result = await transactionsCollection.insertOne(transaction)
     return { _id: result.insertedId.toString(), ...transaction }
   }
 
   async findTransactionById(id: string): Promise<Transaction | null> {
-    await this.initCollection()
-    const transaction = await this.transactionsCollection.findOne({ _id: new ObjectId(id) })
+    const transactionsCollection = await this.transactionsCollection
+    const transaction = await transactionsCollection.findOne({ _id: new ObjectId(id) })
     return transaction ? { ...transaction, _id: transaction._id.toString() } as Transaction : null
   }
 
   async findAllTransactions(filter: Partial<Transaction> = {}): Promise<Transaction[]> {
-    await this.initCollection()
+    const transactionsCollection = await this.transactionsCollection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const transactions = await this.transactionsCollection.find(mongoFilter).sort({ date: -1 }).toArray()
+    const transactions = await transactionsCollection.find(mongoFilter).sort({ date: -1 }).toArray()
     return transactions.map(transaction => ({ ...transaction, _id: transaction._id.toString() } as Transaction))
   }
 
@@ -82,10 +84,10 @@ export class FinanceModel {
   }
 
   async updateTransaction(id: string, updateData: TransactionUpdate): Promise<Transaction | null> {
-    await this.initCollection()
+    const transactionsCollection = await this.transactionsCollection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.transactionsCollection.findOneAndUpdate(
+    const result = await transactionsCollection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -95,13 +97,13 @@ export class FinanceModel {
   }
 
   async deleteTransaction(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.transactionsCollection.deleteOne({ _id: new ObjectId(id) })
+    const transactionsCollection = await this.transactionsCollection
+    const result = await transactionsCollection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async getTransactionStats() {
-    await this.initCollection()
+    const transactionsCollection = await this.transactionsCollection
     const pipeline = [
       {
         $group: {
@@ -112,7 +114,7 @@ export class FinanceModel {
       }
     ]
     
-    const stats = await this.transactionsCollection.aggregate(pipeline).toArray()
+    const stats = await transactionsCollection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = { count: stat.count, totalAmount: stat.totalAmount }
       return acc
@@ -120,8 +122,8 @@ export class FinanceModel {
   }
 
   async getTotalIncome(): Promise<number> {
-    await this.initCollection()
-    const result = await this.transactionsCollection.aggregate([
+    const transactionsCollection = await this.transactionsCollection
+    const result = await transactionsCollection.aggregate([
       { $match: { type: 'income' } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]).toArray()
@@ -130,8 +132,8 @@ export class FinanceModel {
   }
 
   async getTotalExpenses(): Promise<number> {
-    await this.initCollection()
-    const result = await this.transactionsCollection.aggregate([
+    const transactionsCollection = await this.transactionsCollection
+    const result = await transactionsCollection.aggregate([
       { $match: { type: 'expense' } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]).toArray()
@@ -140,8 +142,8 @@ export class FinanceModel {
   }
 
   async getRecentTransactions(limit: number = 10): Promise<Transaction[]> {
-    await this.initCollection()
-    const transactions = await this.transactionsCollection.find()
+    const transactionsCollection = await this.transactionsCollection
+    const transactions = await transactionsCollection.find()
       .sort({ date: -1 })
       .limit(limit)
       .toArray()
@@ -151,7 +153,7 @@ export class FinanceModel {
 
   // Invoice methods
   async createInvoice(invoiceData: InvoiceCreate): Promise<Invoice> {
-    await this.initCollection()
+    const invoicesCollection = await this.invoicesCollection
     
     const invoice: Omit<Invoice, '_id'> = {
       ...invoiceData,
@@ -159,29 +161,29 @@ export class FinanceModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.invoicesCollection.insertOne(invoice)
+    const result = await invoicesCollection.insertOne(invoice)
     return { _id: result.insertedId.toString(), ...invoice }
   }
 
   async findInvoiceById(id: string): Promise<Invoice | null> {
-    await this.initCollection()
-    const invoice = await this.invoicesCollection.findOne({ _id: new ObjectId(id) })
+    const invoicesCollection = await this.invoicesCollection
+    const invoice = await invoicesCollection.findOne({ _id: new ObjectId(id) })
     return invoice ? { ...invoice, _id: invoice._id.toString() } as Invoice : null
   }
 
   async findInvoiceByNumber(invoiceNumber: string): Promise<Invoice | null> {
-    await this.initCollection()
-    const invoice = await this.invoicesCollection.findOne({ invoiceNumber })
+    const invoicesCollection = await this.invoicesCollection
+    const invoice = await invoicesCollection.findOne({ invoiceNumber })
     return invoice ? { ...invoice, _id: invoice._id.toString() } as Invoice : null
   }
 
   async findAllInvoices(filter: Partial<Invoice> = {}): Promise<Invoice[]> {
-    await this.initCollection()
+    const invoicesCollection = await this.invoicesCollection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const invoices = await this.invoicesCollection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
+    const invoices = await invoicesCollection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
     return invoices.map(invoice => ({ ...invoice, _id: invoice._id.toString() } as Invoice))
   }
 
@@ -198,10 +200,10 @@ export class FinanceModel {
   }
 
   async updateInvoice(id: string, updateData: InvoiceUpdate): Promise<Invoice | null> {
-    await this.initCollection()
+    const invoicesCollection = await this.invoicesCollection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.invoicesCollection.findOneAndUpdate(
+    const result = await invoicesCollection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -211,13 +213,13 @@ export class FinanceModel {
   }
 
   async deleteInvoice(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.invoicesCollection.deleteOne({ _id: new ObjectId(id) })
+    const invoicesCollection = await this.invoicesCollection
+    const result = await invoicesCollection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async getInvoiceStats() {
-    await this.initCollection()
+    const invoicesCollection = await this.invoicesCollection
     const pipeline = [
       {
         $group: {
@@ -228,7 +230,7 @@ export class FinanceModel {
       }
     ]
     
-    const stats = await this.invoicesCollection.aggregate(pipeline).toArray()
+    const stats = await invoicesCollection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = { count: stat.count, totalAmount: stat.totalAmount }
       return acc
@@ -236,9 +238,9 @@ export class FinanceModel {
   }
 
   async getOverdueInvoices(): Promise<Invoice[]> {
-    await this.initCollection()
+    const invoicesCollection = await this.invoicesCollection
     const today = new Date()
-    const invoices = await this.invoicesCollection.find({
+    const invoices = await invoicesCollection.find({
       dueDate: { $lt: today },
       status: { $in: ['pending', 'sent'] }
     }).toArray()
@@ -247,8 +249,8 @@ export class FinanceModel {
   }
 
   async getTotalInvoicedAmount(): Promise<number> {
-    await this.initCollection()
-    const result = await this.invoicesCollection.aggregate([
+    const invoicesCollection = await this.invoicesCollection
+    const result = await invoicesCollection.aggregate([
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]).toArray()
     
@@ -256,8 +258,8 @@ export class FinanceModel {
   }
 
   async getTotalPaidAmount(): Promise<number> {
-    await this.initCollection()
-    const result = await this.invoicesCollection.aggregate([
+    const invoicesCollection = await this.invoicesCollection
+    const result = await invoicesCollection.aggregate([
       { $match: { status: 'paid' } },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]).toArray()

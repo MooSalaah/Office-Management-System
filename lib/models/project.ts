@@ -3,31 +3,31 @@ import { getDatabase } from '../database'
 import { Project, ProjectCreate, ProjectUpdate } from '../schemas/project'
 
 export class ProjectModel {
-  private collection!: Collection
+  private collection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection()
   }
 
-  private async initCollection() {
-    if (this.collection) return
-    
+  private async initCollection(): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('projects')
+    const collection = db.collection('projects')
     
     // Create indexes
-    await this.collection.createIndex({ clientId: 1 })
-    await this.collection.createIndex({ status: 1 })
-    await this.collection.createIndex({ type: 1 })
-    await this.collection.createIndex({ assignedTo: 1 })
-    await this.collection.createIndex({ projectManager: 1 })
-    await this.collection.createIndex({ createdAt: -1 })
-    await this.collection.createIndex({ startDate: 1 })
-    await this.collection.createIndex({ endDate: 1 })
+    await collection.createIndex({ clientId: 1 })
+    await collection.createIndex({ status: 1 })
+    await collection.createIndex({ type: 1 })
+    await collection.createIndex({ assignedTo: 1 })
+    await collection.createIndex({ projectManager: 1 })
+    await collection.createIndex({ createdAt: -1 })
+    await collection.createIndex({ startDate: 1 })
+    await collection.createIndex({ endDate: 1 })
+
+    return collection
   }
 
   async create(projectData: ProjectCreate): Promise<Project> {
-    await this.initCollection()
+    const collection = await this.collection
     
     const project: Omit<Project, '_id'> = {
       ...projectData,
@@ -37,13 +37,13 @@ export class ProjectModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(project)
+    const result = await collection.insertOne(project)
     return { _id: result.insertedId.toString(), ...project }
   }
 
   async findById(id: string): Promise<Project | null> {
-    await this.initCollection()
-    const project = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const project = await collection.findOne({ _id: new ObjectId(id) })
     return project ? { ...project, _id: project._id.toString() } as Project : null
   }
 
@@ -52,18 +52,18 @@ export class ProjectModel {
   }
 
   async findAll(filter: Partial<Project> = {}): Promise<Project[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const projects = await this.collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
+    const projects = await collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
     return projects.map(project => ({ ...project, _id: project._id.toString() } as Project))
   }
 
   async findActive(): Promise<Project[]> {
-    await this.initCollection()
-    const projects = await this.collection.find({
+    const collection = await this.collection
+    const projects = await collection.find({
       status: { $in: ['new', 'in-progress'] }
     }).sort({ createdAt: -1 }).toArray()
     return projects.map(project => ({ ...project, _id: project._id.toString() } as Project))
@@ -78,8 +78,8 @@ export class ProjectModel {
   }
 
   async findByAssignedTo(userId: string): Promise<Project[]> {
-    await this.initCollection()
-    const projects = await this.collection.find({
+    const collection = await this.collection
+    const projects = await collection.find({
       assignedTo: { $in: [userId] }
     }).sort({ createdAt: -1 }).toArray()
     return projects.map(project => ({ ...project, _id: project._id.toString() } as Project))
@@ -90,10 +90,10 @@ export class ProjectModel {
   }
 
   async update(id: string, updateData: ProjectUpdate): Promise<Project | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -103,14 +103,14 @@ export class ProjectModel {
   }
 
   async delete(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async updateProgress(id: string, progress: number): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -123,7 +123,7 @@ export class ProjectModel {
   }
 
   async updateProgressFromTasks(projectId: string, completedTasks: number, totalTasks: number): Promise<boolean> {
-    await this.initCollection()
+    const collection = await this.collection
     
     if (totalTasks === 0) {
       return this.updateProgress(projectId, 0)
@@ -134,8 +134,8 @@ export class ProjectModel {
   }
 
   async updateCost(id: string, actualCost: number): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -148,9 +148,9 @@ export class ProjectModel {
   }
 
   async search(query: string): Promise<Project[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const regex = new RegExp(query, 'i')
-    const projects = await this.collection.find({
+    const projects = await collection.find({
       $or: [
         { title: regex },
         { description: regex },
@@ -165,7 +165,7 @@ export class ProjectModel {
   }
 
   async getStats() {
-    await this.initCollection()
+    const collection = await this.collection
     const pipeline = [
       {
         $group: {
@@ -177,7 +177,7 @@ export class ProjectModel {
       }
     ]
     
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = { 
         count: stat.count, 
@@ -189,7 +189,7 @@ export class ProjectModel {
   }
 
   async getTypeStats() {
-    await this.initCollection()
+    const collection = await this.collection
     const pipeline = [
       {
         $group: {
@@ -199,7 +199,7 @@ export class ProjectModel {
       }
     ]
     
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc
@@ -207,8 +207,8 @@ export class ProjectModel {
   }
 
   async getRecentProjects(limit: number = 10): Promise<Project[]> {
-    await this.initCollection()
-    const projects = await this.collection.find()
+    const collection = await this.collection
+    const projects = await collection.find()
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray()
@@ -217,9 +217,9 @@ export class ProjectModel {
   }
 
   async getOverdueProjects(): Promise<Project[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const today = new Date()
-    const projects = await this.collection.find({
+    const projects = await collection.find({
       estimatedEndDate: { $lt: today },
       status: { $in: ['new', 'in-progress'] }
     }).toArray()
@@ -228,18 +228,18 @@ export class ProjectModel {
   }
 
   async countByStatus(status: string): Promise<number> {
-    await this.initCollection()
-    return this.collection.countDocuments({ status: status as any })
+    const collection = await this.collection
+    return collection.countDocuments({ status: status as any })
   }
 
   async countByType(type: string): Promise<number> {
-    await this.initCollection()
-    return this.collection.countDocuments({ type: type as any })
+    const collection = await this.collection
+    return collection.countDocuments({ type: type as any })
   }
 
   async getTotalBudget(): Promise<number> {
-    await this.initCollection()
-    const result = await this.collection.aggregate([
+    const collection = await this.collection
+    const result = await collection.aggregate([
       { $group: { _id: null, total: { $sum: '$budget' } } }
     ]).toArray()
     
@@ -247,8 +247,8 @@ export class ProjectModel {
   }
 
   async getTotalActualCost(): Promise<number> {
-    await this.initCollection()
-    const result = await this.collection.aggregate([
+    const collection = await this.collection
+    const result = await collection.aggregate([
       { $group: { _id: null, total: { $sum: '$actualCost' } } }
     ]).toArray()
     

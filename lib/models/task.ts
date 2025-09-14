@@ -1,32 +1,33 @@
 import { Collection, ObjectId } from 'mongodb'
 import { getDatabase } from '../database'
 import { Task, TaskCreate, TaskUpdate } from '../schemas/task'
+import { updateProjectProgress } from './project-progress'
 
 export class TaskModel {
-  private collection!: Collection
+  private collection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection()
   }
 
-  private async initCollection() {
-    if (this.collection) return
-    
+  private async initCollection(): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('tasks')
+    const collection = db.collection('tasks')
     
     // Create indexes
-    await this.collection.createIndex({ title: 1 })
-    await this.collection.createIndex({ status: 1 })
-    await this.collection.createIndex({ priority: 1 })
-    await this.collection.createIndex({ assignedTo: 1 })
-    await this.collection.createIndex({ projectId: 1 })
-    await this.collection.createIndex({ dueDate: 1 })
-    await this.collection.createIndex({ createdAt: -1 })
+    await collection.createIndex({ title: 1 })
+    await collection.createIndex({ status: 1 })
+    await collection.createIndex({ priority: 1 })
+    await collection.createIndex({ assignedTo: 1 })
+    await collection.createIndex({ projectId: 1 })
+    await collection.createIndex({ dueDate: 1 })
+    await collection.createIndex({ createdAt: -1 })
+
+    return collection
   }
 
   async create(taskData: TaskCreate): Promise<Task> {
-    await this.initCollection()
+    const collection = await this.collection
     
     const task: Omit<Task, '_id'> = {
       ...taskData,
@@ -37,13 +38,13 @@ export class TaskModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(task)
+    const result = await collection.insertOne(task)
     return { _id: result.insertedId.toString(), ...task }
   }
 
   async findById(id: string): Promise<Task | null> {
-    await this.initCollection()
-    const task = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const task = await collection.findOne({ _id: new ObjectId(id) })
     return task ? { ...task, _id: task._id.toString() } as Task : null
   }
 
@@ -52,18 +53,18 @@ export class TaskModel {
   }
 
   async findAll(filter: Partial<Task> = {}): Promise<Task[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const tasks = await this.collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
+    const tasks = await collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
     return tasks.map(task => ({ ...task, _id: task._id.toString() } as Task))
   }
 
   async findActive(): Promise<Task[]> {
-    await this.initCollection()
-    const tasks = await this.collection.find({
+    const collection = await this.collection
+    const tasks = await collection.find({
       status: { $in: ['pending', 'in-progress'] }
     }).sort({ createdAt: -1 }).toArray()
     return tasks.map(task => ({ ...task, _id: task._id.toString() } as Task))
@@ -78,18 +79,18 @@ export class TaskModel {
   }
 
   async findByAssignedTo(userId: string): Promise<Task[]> {
-    await this.initCollection()
-    const tasks = await this.collection.find({
+    const collection = await this.collection
+    const tasks = await collection.find({
       assignedTo: { $in: [userId] }
     }).sort({ createdAt: -1 }).toArray()
     return tasks.map(task => ({ ...task, _id: task._id.toString() } as Task))
   }
 
   async update(id: string, updateData: TaskUpdate): Promise<Task | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -99,37 +100,21 @@ export class TaskModel {
 
     // If task status changed to completed, update project progress
     if (updatedTask && updateData.status === 'completed' && updatedTask.projectId) {
-      await this.updateProjectProgress(updatedTask.projectId)
+      await updateProjectProgress(updatedTask.projectId)
     }
 
     return updatedTask
   }
 
-  private async updateProjectProgress(projectId: string): Promise<void> {
-    try {
-      const { projectModel } = await import('./project')
-      
-      // Get all tasks for this project
-      const projectTasks = await this.findByProject(projectId)
-      const totalTasks = projectTasks.length
-      const completedTasks = projectTasks.filter(task => task.status === 'completed').length
-      
-      // Update project progress
-      await projectModel.updateProgressFromTasks(projectId, completedTasks, totalTasks)
-    } catch (error) {
-      console.error('Failed to update project progress:', error)
-    }
-  }
-
   async delete(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async updateProgress(id: string, progress: number): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -142,9 +127,9 @@ export class TaskModel {
   }
 
   async search(query: string): Promise<Task[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const regex = new RegExp(query, 'i')
-    const tasks = await this.collection.find({
+    const tasks = await collection.find({
       $or: [
         { title: regex },
         { description: regex },
@@ -156,7 +141,7 @@ export class TaskModel {
   }
 
   async getStats() {
-    await this.initCollection()
+    const collection = await this.collection
     const pipeline = [
       {
         $group: {
@@ -166,7 +151,7 @@ export class TaskModel {
       }
     ]
     
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc
@@ -174,7 +159,7 @@ export class TaskModel {
   }
 
   async getPriorityStats() {
-    await this.initCollection()
+    const collection = await this.collection
     const pipeline = [
       {
         $group: {
@@ -184,7 +169,7 @@ export class TaskModel {
       }
     ]
     
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc
@@ -192,8 +177,8 @@ export class TaskModel {
   }
 
   async getRecentTasks(limit: number = 10): Promise<Task[]> {
-    await this.initCollection()
-    const tasks = await this.collection.find()
+    const collection = await this.collection
+    const tasks = await collection.find()
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray()
@@ -202,9 +187,9 @@ export class TaskModel {
   }
 
   async getOverdueTasks(): Promise<Task[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const today = new Date()
-    const tasks = await this.collection.find({
+    const tasks = await collection.find({
       dueDate: { $lt: today },
       status: { $in: ['pending', 'in-progress'] }
     }).toArray()
@@ -213,13 +198,13 @@ export class TaskModel {
   }
 
   async countByStatus(status: string): Promise<number> {
-    await this.initCollection()
-    return this.collection.countDocuments({ status: status as any })
+    const collection = await this.collection
+    return collection.countDocuments({ status: status as any })
   }
 
   async countByPriority(priority: string): Promise<number> {
-    await this.initCollection()
-    return this.collection.countDocuments({ priority: priority as any })
+    const collection = await this.collection
+    return collection.countDocuments({ priority: priority as any })
   }
 }
 

@@ -27,7 +27,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      router.push("/dashboard")
+      router.replace("/dashboard")
       toast({
         title: "تم تسجيل الدخول بنجاح",
         description: "مرحباً بك في نظام إدارة المكتب الهندسي",
@@ -95,23 +95,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h3 className="font-semibold mb-2">حسابات تجريبية:</h3>
-            <div className="text-sm space-y-1">
-              <p>
-                <strong>مدير:</strong> mohamed.qutb@office.com / 123456
-              </p>
-              <p>
-                <strong>مهندس:</strong> amr.ramadan@office.com / 123456
-              </p>
-              <p>
-                <strong>محاسب:</strong> ali.ahmed@office.com / 123456
-              </p>
-              <p>
-                <strong>موارد بشرية:</strong> marwan.gamal@office.com / 123456
-              </p>
-            </div>
-          </div>
+
         </CardContent>
       </Card>
     </div>

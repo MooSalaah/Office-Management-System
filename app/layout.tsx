@@ -3,20 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
-import { RealtimeProvider } from "@/components/realtime-provider"
-import { DataProvider } from "@/components/data-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { ErrorBoundary } from "@/components/error-boundary"
-
-export const metadata: Metadata = {
-  title: "نظام إدارة المكتب الهندسي",
-  description: "نظام شامل لإدارة المكاتب الهندسية في المملكة العربية السعودية",
-  generator: 'v0.dev',
-  // Preload fonts for better performance
-  other: {
-    'font-display': 'swap',
-  }
-}
+import { RealtimeProviderWrapper } from "@/components/realtime-provider-wrapper"
 
 export default function RootLayout({
   children,
@@ -39,12 +26,12 @@ export default function RootLayout({
         <ErrorBoundary>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
             <AuthProvider>
-              <RealtimeProvider>
+              <RealtimeProviderWrapper>
                 <DataProvider>
                   {children}
                   <Toaster />
                 </DataProvider>
-              </RealtimeProvider>
+              </RealtimeProviderWrapper>
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>

@@ -1,34 +1,20 @@
-export const dynamic = "force-dynamic"
-
 import { NextRequest, NextResponse } from 'next/server'
+import { Notification } from '@/lib/models/notification'
+import { UserActivity } from '@/lib/models/user-activity'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 // In-memory storage for real-time data (in production, use Redis or database)
 let connections = new Map<string, number>()
-let notifications: any[] = []
-let userActivities: any[] = []
 let onlineUsers = new Set<string>()
 
 export async function GET(req: NextRequest) {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new NextResponse(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
-          ? process.env.CORS_ORIGIN || 'https://newcornersa.netlify.app'
-          : 'http://localhost:3000',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Max-Age': '86400'
-      }
-    })
-  }
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
 
   try {
     const { searchParams } = new URL(req.url)
     const action = searchParams.get('action')
-    const userId = searchParams.get('userId')
+    const userId = req.headers.get('X-User-Id')
 
     switch (action) {
       case 'connect':
@@ -36,12 +22,16 @@ export async function GET(req: NextRequest) {
           onlineUsers.add(userId)
           connections.set(userId, Date.now())
         }
-        return NextResponse.json({ 
-          success: true, 
+        const [notifications, userActivities] = await Promise.all([
+          Notification.find({ targetUserId: { $in: [userId, 'all'] } }).sort({ timestamp: -1 }).limit(10),
+          UserActivity.find().sort({ timestamp: -1 }).limit(20)
+        ])
+        return NextResponse.json({
+          success: true,
           message: 'Connected',
           onlineUsers: Array.from(onlineUsers),
-          notifications: notifications.slice(-10),
-          userActivities: userActivities.slice(-20)
+          notifications,
+          userActivities
         })
 
       case 'disconnect':
@@ -52,90 +42,79 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'Disconnected' })
 
       case 'notifications':
-        return NextResponse.json({ 
-          success: true, 
-          notifications: notifications.slice(-10) 
+        const userNotifications = await Notification.find({ targetUserId: { $in: [userId, 'all'] } }).sort({ timestamp: -1 }).limit(10)
+        return NextResponse.json({
+          success: true,
+          notifications: userNotifications
         })
 
       case 'activities':
-        return NextResponse.json({ 
-          success: true, 
-          userActivities: userActivities.slice(-20) 
+        const activities = await UserActivity.find().sort({ timestamp: -1 }).limit(20)
+        return NextResponse.json({
+          success: true,
+          userActivities: activities
         })
 
       case 'online-users':
-        return NextResponse.json({ 
-          success: true, 
-          onlineUsers: Array.from(onlineUsers) 
+        return NextResponse.json({
+          success: true,
+          onlineUsers: Array.from(onlineUsers)
         })
 
       default:
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: 'Socket API is running',
           onlineUsers: Array.from(onlineUsers),
           connections: connections.size
         })
     }
   } catch (error) {
-    console.error('Socket API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'فشل في معالجة الطلب' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 }
 
 export async function POST(req: NextRequest) {
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
+
   try {
+    const userId = req.headers.get('X-User-Id')
+    if (!userId) {
+      throw new Error('User ID not found in token')
+    }
+
     const body = await req.json()
-    const { type, data, userId } = body
+    const { type, data } = body
 
     switch (type) {
       case 'notification':
-        const notification = {
+        const notification = new Notification({
           id: Math.random().toString(36).slice(2, 11),
           ...data,
           timestamp: new Date()
-        }
-        notifications.push(notification)
-        if (notifications.length > 50) {
-          notifications = notifications.slice(-50)
-        }
+        })
+        await notification.save()
         break
 
       case 'user-activity':
-        const activity = {
+        const activity = new UserActivity({
           ...data,
+          userId,
           timestamp: new Date()
-        }
-        userActivities.push(activity)
-        if (userActivities.length > 100) {
-          userActivities = userActivities.slice(-100)
-        }
+        })
+        await activity.save()
         break
 
       case 'user-online':
-        if (userId) {
-          onlineUsers.add(userId)
-          connections.set(userId, Date.now())
-        }
+        onlineUsers.add(userId)
+        connections.set(userId, Date.now())
         break
 
       case 'user-away':
-        if (userId) {
-          onlineUsers.delete(userId)
-          connections.delete(userId)
-        }
+        onlineUsers.delete(userId)
+        connections.delete(userId)
         break
     }
 
     return NextResponse.json({ success: true, message: 'Data updated' })
-  } catch (error) {
-    console.error('Socket API POST error:', error)
-    return NextResponse.json(
-      { success: false, error: 'فشل في تحديث البيانات' },
-      { status: 500 }
-    )
-  }
-} 

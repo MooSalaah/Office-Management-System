@@ -3,29 +3,29 @@ import { getDatabase } from '../database'
 import { UserProfile, UserProfileCreate, UserProfileUpdate } from '../schemas/user-profile'
 
 export class UserProfileModel {
-  private collection!: Collection
+  private collection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection()
   }
 
-  private async initCollection() {
-    if (this.collection) return
-    
+  private async initCollection(): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('user_profiles')
+    const collection = db.collection('user_profiles')
     
     // Create indexes
-    await this.collection.createIndex({ userId: 1 }, { unique: true })
-    await this.collection.createIndex({ email: 1 })
-    await this.collection.createIndex({ role: 1 })
-    await this.collection.createIndex({ department: 1 })
-    await this.collection.createIndex({ "preferences.language": 1 })
-    await this.collection.createIndex({ "preferences.theme": 1 })
+    await collection.createIndex({ userId: 1 }, { unique: true })
+    await collection.createIndex({ email: 1 })
+    await collection.createIndex({ role: 1 })
+    await collection.createIndex({ department: 1 })
+    await collection.createIndex({ "preferences.language": 1 })
+    await collection.createIndex({ "preferences.theme": 1 })
+
+    return collection
   }
 
   async create(profileData: UserProfileCreate): Promise<UserProfile> {
-    await this.initCollection()
+    const collection = await this.collection
     
     const profile: Omit<UserProfile, '_id'> = {
       ...profileData,
@@ -33,43 +33,43 @@ export class UserProfileModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(profile)
+    const result = await collection.insertOne(profile)
     return { _id: result.insertedId.toString(), ...profile }
   }
 
   async findByUserId(userId: string): Promise<UserProfile | null> {
-    await this.initCollection()
-    const profile = await this.collection.findOne({ userId })
+    const collection = await this.collection
+    const profile = await collection.findOne({ userId })
     return profile ? { ...profile, _id: profile._id.toString() } as UserProfile : null
   }
 
   async findByEmail(email: string): Promise<UserProfile | null> {
-    await this.initCollection()
-    const profile = await this.collection.findOne({ email })
+    const collection = await this.collection
+    const profile = await collection.findOne({ email })
     return profile ? { ...profile, _id: profile._id.toString() } as UserProfile : null
   }
 
   async findById(id: string): Promise<UserProfile | null> {
-    await this.initCollection()
-    const profile = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const profile = await collection.findOne({ _id: new ObjectId(id) })
     return profile ? { ...profile, _id: profile._id.toString() } as UserProfile : null
   }
 
   async findAll(filter: Partial<UserProfile> = {}): Promise<UserProfile[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const profiles = await this.collection.find(mongoFilter).toArray()
+    const profiles = await collection.find(mongoFilter).toArray()
     return profiles.map(profile => ({ ...profile, _id: profile._id.toString() } as UserProfile))
   }
 
   async update(userId: string, updateData: UserProfileUpdate): Promise<UserProfile | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { userId },
       { $set: update },
       { returnDocument: 'after' }
@@ -79,8 +79,8 @@ export class UserProfileModel {
   }
 
   async updatePreferences(userId: string, preferences: any): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { userId },
       { 
         $set: { 
@@ -101,8 +101,8 @@ export class UserProfileModel {
     address?: string;
     city?: string;
   }): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { userId },
       { 
         $set: { 
@@ -120,8 +120,8 @@ export class UserProfileModel {
     position?: string;
     salary?: number;
   }): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { userId },
       { 
         $set: { 
@@ -134,14 +134,14 @@ export class UserProfileModel {
   }
 
   async delete(userId: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ userId })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ userId })
     return result.deletedCount > 0
   }
 
   async updateAvatar(userId: string, avatarUrl: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { userId },
       { 
         $set: { 
@@ -154,36 +154,36 @@ export class UserProfileModel {
   }
 
   async getUsersByRole(role: string): Promise<UserProfile[]> {
-    await this.initCollection()
-    const profiles = await this.collection.find({ role }).toArray()
+    const collection = await this.collection
+    const profiles = await collection.find({ role }).toArray()
     return profiles.map(profile => ({ ...profile, _id: profile._id.toString() } as UserProfile))
   }
 
   async getUsersByDepartment(department: string): Promise<UserProfile[]> {
-    await this.initCollection()
-    const profiles = await this.collection.find({ department }).toArray()
+    const collection = await this.collection
+    const profiles = await collection.find({ department }).toArray()
     return profiles.map(profile => ({ ...profile, _id: profile._id.toString() } as UserProfile))
   }
 
   async getUsersByLanguage(language: string): Promise<UserProfile[]> {
-    await this.initCollection()
-    const profiles = await this.collection.find({
+    const collection = await this.collection
+    const profiles = await collection.find({
       "preferences.language": language
     }).toArray()
     return profiles.map(profile => ({ ...profile, _id: profile._id.toString() } as UserProfile))
   }
 
   async getUsersByTheme(theme: string): Promise<UserProfile[]> {
-    await this.initCollection()
-    const profiles = await this.collection.find({
+    const collection = await this.collection
+    const profiles = await collection.find({
       "preferences.theme": theme
     }).toArray()
     return profiles.map(profile => ({ ...profile, _id: profile._id.toString() } as UserProfile))
   }
 
   async searchUsers(query: string): Promise<UserProfile[]> {
-    await this.initCollection()
-    const profiles = await this.collection.find({
+    const collection = await this.collection
+    const profiles = await collection.find({
       $or: [
         { firstName: { $regex: query, $options: 'i' } },
         { lastName: { $regex: query, $options: 'i' } },

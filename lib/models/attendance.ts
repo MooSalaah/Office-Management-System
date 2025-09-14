@@ -3,37 +3,39 @@ import { getDatabase } from '../database'
 import { Attendance, AttendanceCreate, AttendanceUpdate, LeaveRequest, LeaveRequestCreate, LeaveRequestUpdate } from '../schemas/attendance'
 
 export class AttendanceModel {
-  private collection!: Collection
-  private leaveRequestsCollection!: Collection
+  private collection: Promise<Collection>
+  private leaveRequestsCollection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection('attendance')
+    this.leaveRequestsCollection = this.initCollection('leave_requests')
   }
 
-  private async initCollection() {
-    if (this.collection) return
-    
+  private async initCollection(collectionName: string): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('attendance')
-    this.leaveRequestsCollection = db.collection('leave_requests')
+    const collection = db.collection(collectionName)
     
-    // Create indexes for attendance
-    await this.collection.createIndex({ userId: 1 })
-    await this.collection.createIndex({ date: 1 })
-    await this.collection.createIndex({ status: 1 })
-    await this.collection.createIndex({ createdAt: -1 })
-    
-    // Create indexes for leave requests
-    await this.leaveRequestsCollection.createIndex({ userId: 1 })
-    await this.leaveRequestsCollection.createIndex({ status: 1 })
-    await this.leaveRequestsCollection.createIndex({ startDate: 1 })
-    await this.leaveRequestsCollection.createIndex({ endDate: 1 })
-    await this.leaveRequestsCollection.createIndex({ createdAt: -1 })
+    if (collectionName === 'attendance') {
+      // Create indexes for attendance
+      await collection.createIndex({ userId: 1 })
+      await collection.createIndex({ date: 1 })
+      await collection.createIndex({ status: 1 })
+      await collection.createIndex({ createdAt: -1 })
+    } else if (collectionName === 'leave_requests') {
+      // Create indexes for leave requests
+      await collection.createIndex({ userId: 1 })
+      await collection.createIndex({ status: 1 })
+      await collection.createIndex({ startDate: 1 })
+      await collection.createIndex({ endDate: 1 })
+      await collection.createIndex({ createdAt: -1 })
+    }
+
+    return collection
   }
 
   // Attendance methods
   async createAttendance(attendanceData: AttendanceCreate): Promise<Attendance> {
-    await this.initCollection()
+    const collection = await this.collection
     
     const attendance: Omit<Attendance, '_id'> = {
       ...attendanceData,
@@ -41,13 +43,13 @@ export class AttendanceModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(attendance)
+    const result = await collection.insertOne(attendance)
     return { _id: result.insertedId.toString(), ...attendance }
   }
 
   async findAttendanceById(id: string): Promise<Attendance | null> {
-    await this.initCollection()
-    const attendance = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const attendance = await collection.findOne({ _id: new ObjectId(id) })
     return attendance ? { ...attendance, _id: attendance._id.toString() } as Attendance : null
   }
 
@@ -56,23 +58,23 @@ export class AttendanceModel {
   }
 
   async findAllAttendance(filter: Partial<Attendance> = {}): Promise<Attendance[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const attendance = await this.collection.find(mongoFilter).sort({ date: -1 }).toArray()
+    const attendance = await collection.find(mongoFilter).sort({ date: -1 }).toArray()
     return attendance.map(record => ({ ...record, _id: record._id.toString() } as Attendance))
   }
 
   async findAttendanceByDate(date: Date): Promise<Attendance[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const startOfDay = new Date(date)
     startOfDay.setHours(0, 0, 0, 0)
     const endOfDay = new Date(date)
     endOfDay.setHours(23, 59, 59, 999)
     
-    const attendance = await this.collection.find({
+    const attendance = await collection.find({
       date: { $gte: startOfDay, $lte: endOfDay }
     }).toArray()
     
@@ -80,13 +82,13 @@ export class AttendanceModel {
   }
 
   async findAttendanceByUserAndDate(userId: string, date: Date): Promise<Attendance | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const startOfDay = new Date(date)
     startOfDay.setHours(0, 0, 0, 0)
     const endOfDay = new Date(date)
     endOfDay.setHours(23, 59, 59, 999)
     
-    const attendance = await this.collection.findOne({
+    const attendance = await collection.findOne({
       userId,
       date: { $gte: startOfDay, $lte: endOfDay }
     })
@@ -95,10 +97,10 @@ export class AttendanceModel {
   }
 
   async updateAttendance(id: string, updateData: AttendanceUpdate): Promise<Attendance | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -108,13 +110,13 @@ export class AttendanceModel {
   }
 
   async deleteAttendance(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async getAttendanceStats(userId?: string) {
-    await this.initCollection()
+    const collection = await this.collection
     const matchStage = userId ? { userId } : {}
     
     const pipeline = [
@@ -127,7 +129,7 @@ export class AttendanceModel {
       }
     ]
     
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc
@@ -136,7 +138,7 @@ export class AttendanceModel {
 
   // Leave Request methods
   async createLeaveRequest(leaveData: LeaveRequestCreate): Promise<LeaveRequest> {
-    await this.initCollection()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
     
     const leaveRequest: Omit<LeaveRequest, '_id'> = {
       ...leaveData,
@@ -144,43 +146,43 @@ export class AttendanceModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.leaveRequestsCollection.insertOne(leaveRequest)
+    const result = await leaveRequestsCollection.insertOne(leaveRequest)
     return { _id: result.insertedId.toString(), ...leaveRequest }
   }
 
   async findLeaveRequestById(id: string): Promise<LeaveRequest | null> {
-    await this.initCollection()
-    const leaveRequest = await this.leaveRequestsCollection.findOne({ _id: new ObjectId(id) })
+    const leaveRequestsCollection = await this.leaveRequestsCollection
+    const leaveRequest = await leaveRequestsCollection.findOne({ _id: new ObjectId(id) })
     return leaveRequest ? { ...leaveRequest, _id: leaveRequest._id.toString() } as LeaveRequest : null
   }
 
   async findLeaveRequestsByUser(userId: string): Promise<LeaveRequest[]> {
-    await this.initCollection()
-    const leaveRequests = await this.leaveRequestsCollection.find({ userId }).sort({ createdAt: -1 }).toArray()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
+    const leaveRequests = await leaveRequestsCollection.find({ userId }).sort({ createdAt: -1 }).toArray()
     return leaveRequests.map(request => ({ ...request, _id: request._id.toString() } as LeaveRequest))
   }
 
   async findAllLeaveRequests(filter: Partial<LeaveRequest> = {}): Promise<LeaveRequest[]> {
-    await this.initCollection()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const leaveRequests = await this.leaveRequestsCollection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
+    const leaveRequests = await leaveRequestsCollection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
     return leaveRequests.map(request => ({ ...request, _id: request._id.toString() } as LeaveRequest))
   }
 
   async findPendingLeaveRequests(): Promise<LeaveRequest[]> {
-    await this.initCollection()
-    const leaveRequests = await this.leaveRequestsCollection.find({ status: 'pending' }).sort({ createdAt: -1 }).toArray()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
+    const leaveRequests = await leaveRequestsCollection.find({ status: 'pending' }).sort({ createdAt: -1 }).toArray()
     return leaveRequests.map(request => ({ ...request, _id: request._id.toString() } as LeaveRequest))
   }
 
   async updateLeaveRequest(id: string, updateData: LeaveRequestUpdate): Promise<LeaveRequest | null> {
-    await this.initCollection()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.leaveRequestsCollection.findOneAndUpdate(
+    const result = await leaveRequestsCollection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -190,13 +192,13 @@ export class AttendanceModel {
   }
 
   async deleteLeaveRequest(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.leaveRequestsCollection.deleteOne({ _id: new ObjectId(id) })
+    const leaveRequestsCollection = await this.leaveRequestsCollection
+    const result = await leaveRequestsCollection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async getLeaveRequestStats(userId?: string) {
-    await this.initCollection()
+    const leaveRequestsCollection = await this.leaveRequestsCollection
     const matchStage = userId ? { userId } : {}
     
     const pipeline = [
@@ -209,7 +211,7 @@ export class AttendanceModel {
       }
     ]
     
-    const stats = await this.leaveRequestsCollection.aggregate(pipeline).toArray()
+    const stats = await leaveRequestsCollection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc

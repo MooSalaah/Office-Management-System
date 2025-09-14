@@ -3,26 +3,26 @@ import { getDatabase } from '../database'
 import { CompanySettings, CompanySettingsCreate, CompanySettingsUpdate } from '../schemas/company-settings'
 
 export class CompanySettingsModel {
-  private collection!: Collection
+  private collection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection()
   }
 
-  private async initCollection() {
-    if (this.collection) return
-    
+  private async initCollection(): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('company_settings')
+    const collection = db.collection('company_settings')
     
     // Create indexes
-    await this.collection.createIndex({ companyName: 1 })
-    await this.collection.createIndex({ email: 1 })
-    await this.collection.createIndex({ "systemSettings.defaultLanguage": 1 })
+    await collection.createIndex({ companyName: 1 })
+    await collection.createIndex({ email: 1 })
+    await collection.createIndex({ "systemSettings.defaultLanguage": 1 })
+
+    return collection
   }
 
   async create(settingsData: CompanySettingsCreate): Promise<CompanySettings> {
-    await this.initCollection()
+    const collection = await this.collection
     
     const settings: Omit<CompanySettings, '_id'> = {
       ...settingsData,
@@ -30,28 +30,28 @@ export class CompanySettingsModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(settings)
+    const result = await collection.insertOne(settings)
     return { _id: result.insertedId.toString(), ...settings }
   }
 
   async findById(id: string): Promise<CompanySettings | null> {
-    await this.initCollection()
-    const settings = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const settings = await collection.findOne({ _id: new ObjectId(id) })
     return settings ? { ...settings, _id: settings._id.toString() } as CompanySettings : null
   }
 
   async getCurrentSettings(): Promise<CompanySettings | null> {
-    await this.initCollection()
+    const collection = await this.collection
     // Assuming there's only one company settings record
-    const settings = await this.collection.findOne({})
+    const settings = await collection.findOne({})
     return settings ? { ...settings, _id: settings._id.toString() } as CompanySettings : null
   }
 
   async update(id: string, updateData: CompanySettingsUpdate): Promise<CompanySettings | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -61,10 +61,10 @@ export class CompanySettingsModel {
   }
 
   async updateCurrentSettings(updateData: CompanySettingsUpdate): Promise<CompanySettings | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       {},
       { $set: update },
       { returnDocument: 'after' }
@@ -81,8 +81,8 @@ export class CompanySettingsModel {
     email?: string;
     phone?: string;
   }): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -95,8 +95,8 @@ export class CompanySettingsModel {
   }
 
   async updateAddress(id: string, address: any): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -109,8 +109,8 @@ export class CompanySettingsModel {
   }
 
   async updateWorkingHours(id: string, workingHours: any): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -123,8 +123,8 @@ export class CompanySettingsModel {
   }
 
   async updateSystemSettings(id: string, systemSettings: any): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -137,8 +137,8 @@ export class CompanySettingsModel {
   }
 
   async updateLogo(id: string, logoUrl: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -151,8 +151,8 @@ export class CompanySettingsModel {
   }
 
   async updateStamp(id: string, stampUrl: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -165,8 +165,8 @@ export class CompanySettingsModel {
   }
 
   async updateSignature(id: string, signatureUrl: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.updateOne(
+    const collection = await this.collection
+    const result = await collection.updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: { 
@@ -179,14 +179,14 @@ export class CompanySettingsModel {
   }
 
   async delete(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async getSettingsByLanguage(language: string): Promise<CompanySettings[]> {
-    await this.initCollection()
-    const settings = await this.collection.find({
+    const collection = await this.collection
+    const settings = await collection.find({
       "systemSettings.defaultLanguage": language
     }).toArray()
     return settings.map(setting => ({ ...setting, _id: setting._id.toString() } as CompanySettings))

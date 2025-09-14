@@ -1,18 +1,21 @@
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from 'next/server'
 import { TaskCreateSchema } from '@/lib/schemas'
+import { taskModel } from '@/lib/models'
+
+import { checkMongoDb } from '@/lib/api-utils'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { TaskCreateSchema } from '@/lib/schemas'
+import { taskModel } from '@/lib/models'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
-  try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
-    }
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
 
+  try {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
     const status = searchParams.get('status')
@@ -20,7 +23,6 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId')
     const assignedTo = searchParams.get('assignedTo')
     
-    const { taskModel } = await import('@/lib/models')
     let tasks
     if (query) {
       tasks = await taskModel.search(query)
@@ -38,44 +40,40 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ success: true, data: tasks })
   } catch (error) {
-    console.error('Error fetching tasks:', error)
-    return NextResponse.json(
-      { success: false, error: 'فشل في جلب المهام' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
+
   try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
+    const userId = request.headers.get('X-User-Id')
+    if (!userId) {
+      throw new Error('User ID not found in token')
     }
 
     const body = await request.json()
     
     // Validate input
     const validatedData = TaskCreateSchema.parse(body)
+
+    const dataWithUser = { ...validatedData, createdBy: userId }
     
-    const { taskModel } = await import('@/lib/models')
     // Create task
-    const task = await taskModel.create(validatedData)
+    const task = await taskModel.create(dataWithUser)
 
     // Emit real-time update
     try {
-      // @ts-ignore - Next.js specific
-      const io = request.socket?.server?.io
+      const io = (request as any).socket?.server?.io
       if (io) {
         io.emit('data-changed', {
           type: 'create',
           entity: 'task',
           entityId: task._id,
           data: task,
-          userId: 'system',
+          userId: userId,
           timestamp: new Date()
         })
 
@@ -109,18 +107,6 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ success: true, data: task }, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating task:', error)
-    
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'بيانات غير صحيحة', details: error.errors },
-        { status: 400 }
-      )
-    }
-    
-    return NextResponse.json(
-      { success: false, error: 'فشل في إنشاء المهمة' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 } 

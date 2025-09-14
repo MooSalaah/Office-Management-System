@@ -1,8 +1,12 @@
 export const dynamic = "force-static"
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
+
   try {
     // Check environment variables
     const envCheck = {
@@ -37,16 +41,6 @@ export async function GET(request: NextRequest) {
       uptime: process.uptime()
     })
   } catch (error) {
-    console.error('Health check error:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        status: 'error',
-        message: 'خطأ في فحص صحة النظام',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 } 

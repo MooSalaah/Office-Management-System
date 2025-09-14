@@ -1,24 +1,26 @@
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from 'next/server'
 import { UserProfileCreateSchema } from '@/lib/schemas'
+import { userProfileModel } from '@/lib/models'
+
+import { checkMongoDb } from '@/lib/api-utils'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { UserProfileCreateSchema } from '@/lib/schemas'
+import { userProfileModel } from '@/lib/models'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
-  try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
-    }
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
 
+  try {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
     const role = searchParams.get('role')
     const department = searchParams.get('department')
     
-            const { userProfileModel } = await import('@/lib/models')
         let profiles
         if (query) {
           profiles = await userProfileModel.searchUsers(query)
@@ -32,47 +34,32 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ success: true, data: profiles })
   } catch (error) {
-    console.error('Error fetching user profiles:', error)
-    return NextResponse.json(
-      { success: false, error: 'فشل في جلب الملفات الشخصية' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
+
   try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
+    const userId = request.headers.get('X-User-Id')
+    if (!userId) {
+      throw new Error('User ID not found in token')
     }
 
     const body = await request.json()
     
     // Validate input
     const validatedData = UserProfileCreateSchema.parse(body)
+
+    const dataWithUser = { ...validatedData, createdBy: userId }
     
-            const { userProfileModel } = await import('@/lib/models')
         // Create user profile
-        const profile = await userProfileModel.create(validatedData)
+        const profile = await userProfileModel.create(dataWithUser)
     
     return NextResponse.json({ success: true, data: profile }, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating user profile:', error)
-    
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'بيانات غير صحيحة', details: error.errors },
-        { status: 400 }
-      )
-    }
-    
-    return NextResponse.json(
-      { success: false, error: 'فشل في إنشاء الملف الشخصي' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 } 

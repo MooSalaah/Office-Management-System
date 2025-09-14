@@ -114,6 +114,8 @@ const RealtimeIndicators: React.FC = () => {
     removeNotification,
   } = useRealtime()
 
+  const { user } = useAuth() // Get the current user from AuthContext
+
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('ar-SA', {
       hour: '2-digit',
@@ -143,10 +145,10 @@ const RealtimeIndicators: React.FC = () => {
             <ScrollArea className="h-32">
               {onlineUsers.length > 0 ? (
                 <div className="space-y-1">
-                  {onlineUsers.map(userId => (
-                    <div key={userId} className="flex items-center gap-2 text-sm">
+                  {onlineUsers.map(onlineUserId => (
+                    <div key={onlineUserId} className="flex items-center gap-2 text-sm">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>{userId}</span>
+                      <span>{onlineUserId === user?.id ? user.name : onlineUserId}</span>
                     </div>
                   ))}
                 </div>
@@ -235,7 +237,7 @@ const RealtimeIndicators: React.FC = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className="text-sm">
-                            <span className="font-medium">{activity.userId}</span>
+                            <span className="font-medium">{activity.userId === user?.id ? user.name : activity.userId}</span>
                             <span className="mx-1">{activity.action}</span>
                             <span className="font-medium">{activity.entity}</span>
                           </p>

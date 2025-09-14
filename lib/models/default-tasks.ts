@@ -3,27 +3,27 @@ import { getDatabase } from '../database'
 import { DefaultTask, DefaultTaskCreate, DefaultTaskUpdate } from '../schemas/default-tasks'
 
 export class DefaultTaskModel {
-  private collection!: Collection
+  private collection: Promise<Collection>
 
   constructor() {
-    // Don't initialize collection in constructor
+    this.collection = this.initCollection()
   }
 
-  private async initCollection() {
-    if (this.collection) return
-
+  private async initCollection(): Promise<Collection> {
     const db = await getDatabase()
-    this.collection = db.collection('default_tasks')
+    const collection = db.collection('default_tasks')
 
     // Create indexes
-    await this.collection.createIndex({ title: 1 })
-    await this.collection.createIndex({ category: 1 })
-    await this.collection.createIndex({ isActive: 1 })
-    await this.collection.createIndex({ createdAt: -1 })
+    await collection.createIndex({ title: 1 })
+    await collection.createIndex({ category: 1 })
+    await collection.createIndex({ isActive: 1 })
+    await collection.createIndex({ createdAt: -1 })
+
+    return collection
   }
 
   async create(taskData: DefaultTaskCreate): Promise<DefaultTask> {
-    await this.initCollection()
+    const collection = await this.collection
 
     const task: Omit<DefaultTask, '_id'> = {
       ...taskData,
@@ -31,23 +31,23 @@ export class DefaultTaskModel {
       updatedAt: new Date(),
     }
 
-    const result = await this.collection.insertOne(task)
+    const result = await collection.insertOne(task)
     return { _id: result.insertedId.toString(), ...task }
   }
 
   async findById(id: string): Promise<DefaultTask | null> {
-    await this.initCollection()
-    const task = await this.collection.findOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const task = await collection.findOne({ _id: new ObjectId(id) })
     return task ? { ...task, _id: task._id.toString() } as DefaultTask : null
   }
 
   async findAll(filter: Partial<DefaultTask> = {}): Promise<DefaultTask[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const mongoFilter = { ...filter } as any
     if (mongoFilter._id) {
       mongoFilter._id = new ObjectId(mongoFilter._id)
     }
-    const tasks = await this.collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
+    const tasks = await collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
     return tasks.map(task => ({ ...task, _id: task._id.toString() } as DefaultTask))
   }
 
@@ -60,10 +60,10 @@ export class DefaultTaskModel {
   }
 
   async update(id: string, updateData: DefaultTaskUpdate): Promise<DefaultTask | null> {
-    await this.initCollection()
+    const collection = await this.collection
     const update = { ...updateData, updatedAt: new Date() }
 
-    const result = await this.collection.findOneAndUpdate(
+    const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $set: update },
       { returnDocument: 'after' }
@@ -73,15 +73,15 @@ export class DefaultTaskModel {
   }
 
   async delete(id: string): Promise<boolean> {
-    await this.initCollection()
-    const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
+    const collection = await this.collection
+    const result = await collection.deleteOne({ _id: new ObjectId(id) })
     return result.deletedCount > 0
   }
 
   async search(query: string): Promise<DefaultTask[]> {
-    await this.initCollection()
+    const collection = await this.collection
     const regex = new RegExp(query, 'i')
-    const tasks = await this.collection.find({
+    const tasks = await collection.find({
       $or: [
         { title: regex },
         { description: regex }
@@ -92,7 +92,7 @@ export class DefaultTaskModel {
   }
 
   async getStats() {
-    await this.initCollection()
+    const collection = await this.collection
     const pipeline = [
       {
         $group: {
@@ -102,7 +102,7 @@ export class DefaultTaskModel {
       }
     ]
 
-    const stats = await this.collection.aggregate(pipeline).toArray()
+    const stats = await collection.aggregate(pipeline).toArray()
     return stats.reduce((acc, stat) => {
       acc[stat._id] = stat.count
       return acc

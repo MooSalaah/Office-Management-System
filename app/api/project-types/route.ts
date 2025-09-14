@@ -1,23 +1,25 @@
-export const dynamic = "force-static"
+export const dynamic = "force-dynamic"
 
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectTypeDefinitionCreateSchema } from '@/lib/schemas'
+import { projectTypeDefinitionModel } from '@/lib/models'
+
+import { checkMongoDb } from '@/lib/api-utils'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { ProjectTypeDefinitionCreateSchema } from '@/lib/schemas'
+import { projectTypeDefinitionModel } from '@/lib/models'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
-  try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
-    }
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
 
+  try {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
     const active = searchParams.get('active')
 
-    const { projectTypeDefinitionModel } = await import('@/lib/models') // Dynamic import
     let types
     if (query) {
       types = await projectTypeDefinitionModel.search(query)
@@ -29,22 +31,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: types })
   } catch (error) {
-    console.error('Error fetching project types:', error)
-    return NextResponse.json(
-      { success: false, error: 'فشل في جلب أنواع المشاريع' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
+  const dbCheck = checkMongoDb()
+  if (dbCheck) return dbCheck
+
   try {
-    // Check if MongoDB is available
-    if (!process.env.MONGODB_URI) {
-      return NextResponse.json(
-        { success: false, error: 'قاعدة البيانات غير متاحة' },
-        { status: 503 }
-      )
+    const userId = request.headers.get('X-User-Id')
+    if (!userId) {
+      throw new Error('User ID not found in token')
     }
 
     const body = await request.json()
@@ -52,21 +50,21 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = ProjectTypeDefinitionCreateSchema.parse(body)
 
-    const { projectTypeDefinitionModel } = await import('@/lib/models') // Dynamic import
+    const dataWithUser = { ...validatedData, createdBy: userId }
+
     // Create project type
-    const type = await projectTypeDefinitionModel.create(validatedData)
+    const type = await projectTypeDefinitionModel.create(dataWithUser)
 
     // Emit real-time update
     try {
-      // @ts-ignore - Next.js specific
-      const io = request.socket?.server?.io
+      const io = (request as any).socket?.server?.io
       if (io) {
         io.emit('data-changed', {
           type: 'create',
           entity: 'project-type',
           entityId: type._id,
           data: type,
-          userId: 'system',
+          userId: userId,
           timestamp: new Date()
         })
       }
@@ -74,20 +72,4 @@ export async function POST(request: NextRequest) {
       console.error('Failed to emit real-time update:', error)
     }
 
-    return NextResponse.json({ success: true, data: type }, { status: 201 })
-  } catch (error: any) {
-    console.error('Error creating project type:', error)
-
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'بيانات غير صحيحة', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { success: false, error: 'فشل في إنشاء نوع المشروع' },
-      { status: 500 }
-    )
-  }
-} 
+    return NextResponse.json({ success: true, data: type }, { status: 201 }) 
