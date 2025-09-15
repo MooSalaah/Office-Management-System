@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { DefaultTaskCreateSchema } from '@/lib/schemas'
 import { defaultTaskModel } from '@/lib/models'
 
-import { checkMongoDb } from '@/lib/api-utils'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   const dbCheck = checkMongoDb()
@@ -76,4 +76,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: task }, { status: 201 })
   } catch (error: any) {
     return handleError(error)
-  } 
+  }
+} 

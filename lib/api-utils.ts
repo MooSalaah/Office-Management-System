@@ -16,7 +16,7 @@ export function handleError(error: any): NextResponse {
 
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { success: false, error: 'بيانات غير صحيحة', details: error.errors },
+      { success: false, error: 'بيانات غير صحيحة', details: error.issues },
       { status: 400 }
     )
   }

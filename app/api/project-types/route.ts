@@ -3,12 +3,6 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { ProjectTypeDefinitionCreateSchema } from '@/lib/schemas'
 import { projectTypeDefinitionModel } from '@/lib/models'
-
-import { checkMongoDb } from '@/lib/api-utils'
-
-import { NextRequest, NextResponse } from 'next/server'
-import { ProjectTypeDefinitionCreateSchema } from '@/lib/schemas'
-import { projectTypeDefinitionModel } from '@/lib/models'
 import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
@@ -72,4 +66,8 @@ export async function POST(request: NextRequest) {
       console.error('Failed to emit real-time update:', error)
     }
 
-    return NextResponse.json({ success: true, data: type }, { status: 201 }) 
+    return NextResponse.json({ success: true, data: type }, { status: 201 })
+  } catch (error: any) {
+    return handleError(error)
+  }
+}

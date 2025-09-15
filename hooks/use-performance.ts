@@ -23,7 +23,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
   delay: number
 ): T {
   const lastCall = useRef(0)
-  const lastCallTimer = useRef<NodeJS.Timeout>()
+  const lastCallTimer = useRef<NodeJS.Timeout | null>(null)
 
   return useCallback(
     (...args: Parameters<T>) => {
@@ -151,7 +151,7 @@ export function useNetworkStatus() {
 export function useScrollPerformance() {
   const [scrollY, setScrollY] = useState(0)
   const [isScrolling, setIsScrolling] = useState(false)
-  const scrollTimeout = useRef<NodeJS.Timeout>()
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const handleScroll = () => {

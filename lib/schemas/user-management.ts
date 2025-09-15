@@ -88,7 +88,7 @@ export const UserActivitySchema = z.object({
   action: z.string(),
   resource: z.string().optional(),
   resourceId: z.string().optional(),
-  details: z.record(z.any()).optional(),
+  details: z.record(z.string(), z.any()).optional(),
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
   timestamp: z.date().default(() => new Date()),

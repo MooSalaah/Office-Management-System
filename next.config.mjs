@@ -1,28 +1,47 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable experimental features for better performance
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
-  },
-  
-  // Image optimization for Vercel
+  // لا نستخدم output: export لأن لدينا API routes
+  // output: 'export',
+  trailingSlash: true,
   images: {
-    domains: process.env.NEXT_PUBLIC_IMAGE_DOMAINS ? process.env.NEXT_PUBLIC_IMAGE_DOMAINS.split(',') : [],
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    unoptimized: true,
+    domains: ['localhost', 'netlify.app']
   },
-  
-  // Compiler optimization
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+  serverExternalPackages: ['mongodb'],
+  // تحسين الحجم
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons']
   },
-  
-  // Performance optimizations
-  poweredByHeader: false,
-  compress: true,
-  generateEtags: false,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      }
+    }
+    
+    // تحسين حجم الباندل
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+            },
+          },
+        },
+      }
+    }
+    
+    return config
+  }
 }
 
 export default nextConfig 

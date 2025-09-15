@@ -118,3 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: 'Data updated' })
+  } catch (error) {
+    return handleError(error)
+  }
+}

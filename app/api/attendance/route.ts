@@ -3,12 +3,6 @@ export const dynamic = "force-dynamic"
 import { NextRequest, NextResponse } from 'next/server'
 import { AttendanceCreateSchema } from '@/lib/schemas'
 import { attendanceModel } from '@/lib/models'
-
-import { checkMongoDb } from '@/lib/api-utils'
-
-import { NextRequest, NextResponse } from 'next/server'
-import { AttendanceCreateSchema } from '@/lib/schemas'
-import { attendanceModel } from '@/lib/models'
 import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {

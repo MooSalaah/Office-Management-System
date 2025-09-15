@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useSocket, Notification, UserActivity, UserStatus } from '@/hooks/use-socket'
 import { toast } from '@/hooks/use-toast'
+import { useAuth } from './auth-provider'
 import { Bell, Users, Activity, Wifi, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -39,7 +40,7 @@ export const useRealtime = () => {
 
 interface RealtimeProviderProps {
   children: React.ReactNode
-  userId?: string
+  userId: string | null | undefined
 }
 
 export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ 

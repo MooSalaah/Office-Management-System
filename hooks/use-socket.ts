@@ -32,7 +32,7 @@ export interface DataChange {
   timestamp: Date
 }
 
-export const useSocket = (userId?: string) => {
+export const useSocket = (userId: string | null | undefined) => {
   const [isConnected, setIsConnected] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [userActivities, setUserActivities] = useState<UserActivity[]>([])

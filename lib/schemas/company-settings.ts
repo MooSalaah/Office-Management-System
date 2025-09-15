@@ -23,7 +23,12 @@ export const CompanySettingsSchema = z.object({
     endTime: z.string().default("17:00"),
     workDays: z.array(z.number()).default([0, 1, 2, 3, 4]), // Sunday to Thursday
     weekendDays: z.array(z.number()).default([5, 6]), // Friday, Saturday
-  }).default({}),
+  }).default({
+    startTime: "08:00",
+    endTime: "17:00",
+    workDays: [0, 1, 2, 3, 4],
+    weekendDays: [5, 6],
+  }),
   systemSettings: z.object({
     defaultLanguage: z.enum(["ar", "en"]).default("ar"),
     defaultTimezone: z.string().default("Asia/Riyadh"),
@@ -32,7 +37,15 @@ export const CompanySettingsSchema = z.object({
     currency: z.string().default("SAR"),
     currencySymbol: z.string().default("ر.س"),
     decimalPlaces: z.number().default(2),
-  }).default({}),
+  }).default({
+    defaultLanguage: "ar",
+    defaultTimezone: "Asia/Riyadh",
+    dateFormat: "DD/MM/YYYY",
+    timeFormat: "24h",
+    currency: "SAR",
+    currencySymbol: "ر.س",
+    decimalPlaces: 2,
+  }),
   createdBy: z.string(), // User ID
   updatedBy: z.string().optional(), // User ID
   createdAt: z.date().default(() => new Date()),

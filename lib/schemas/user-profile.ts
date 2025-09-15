@@ -26,8 +26,23 @@ export const UserProfileSchema = z.object({
       email: z.boolean().default(true),
       push: z.boolean().default(true),
       sms: z.boolean().default(false),
-    }).default({}),
-  }).default({}),
+    }).default({
+      email: true,
+      push: true,
+      sms: false,
+    }),
+  }).default({
+    language: "ar",
+    theme: "light",
+    timezone: "Asia/Riyadh",
+    dateFormat: "DD/MM/YYYY",
+    timeFormat: "24h",
+    notifications: {
+      email: true,
+      push: true,
+      sms: false,
+    },
+  }),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),
 })

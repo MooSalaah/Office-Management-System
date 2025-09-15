@@ -4,6 +4,9 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
 import { RealtimeProviderWrapper } from "@/components/realtime-provider-wrapper"
+import { DataProvider } from "@/components/data-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 export default function RootLayout({
   children,

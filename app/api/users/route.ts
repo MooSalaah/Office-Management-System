@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UserCreateSchema } from '@/lib/schemas'
 import { userModel } from '@/lib/models'
 
-import { checkMongoDb } from '@/lib/api-utils'
+import { checkMongoDb, handleError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   const dbCheck = checkMongoDb()
@@ -77,3 +77,4 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     return handleError(error)
   }
+}
